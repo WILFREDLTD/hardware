@@ -2,6 +2,13 @@
  * Utility functions for calculations
  */
 
+export const formatKES = (amount: number, decimals = 2): string => {
+  return new Intl.NumberFormat('en-KE', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(amount)
+}
+
 export const calculateStats = {
   /**
    * Calculate total revenue from sales

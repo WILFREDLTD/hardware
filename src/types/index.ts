@@ -19,6 +19,8 @@ export interface Sale {
   totalAmount: number;
   paymentStatus: "PAID" | "DEBT";
   notes?: string;
+  deletedAt?: Date;
+  deletionReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }

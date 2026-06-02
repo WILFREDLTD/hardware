@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { formatKES } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -114,7 +115,7 @@ export default function InventoryPage() {
           { label: 'Total Products', value: products.length, icon: '📦', color: 'text-gray-900' },
           { label: 'Low Stock', value: lowCount, icon: '⚠️', color: 'text-amber-600' },
           { label: 'Out of Stock', value: outCount, icon: '🔴', color: 'text-red-500' },
-          { label: 'Stock Value', value: `KES ${totalValue.toFixed(0)}`, icon: '💰', color: 'text-green-700' },
+          { label: 'Stock Value', value: `KES ${formatKES(totalValue)}`, icon: '💰', color: 'text-green-700' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-100 px-4 py-3">
             <div className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-1">{s.label}</div>
@@ -201,8 +202,8 @@ export default function InventoryPage() {
                         <StockBar current={product.currentStock} min={product.minStockLevel} max={product.minStockLevel * 4} />
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-sm font-semibold text-gray-900">KES {product.unitPrice.toFixed(2)}</td>
-                    <td className="py-4 px-4 text-sm text-gray-600">KES {product.purchasePrice.toFixed(2)}</td>
+                    <td className="py-4 px-4 text-sm font-semibold text-gray-900">KES {formatKES(product.unitPrice)}</td>
+                    <td className="py-4 px-4 text-sm text-gray-600">KES {formatKES(product.purchasePrice)}</td>
                     <td className="py-4 px-4">
                       <Badge variant={status.variant}>{status.text}</Badge>
                     </td>

@@ -6,12 +6,17 @@ export async function GET() {
   try {
     // Fetch all data needed for calculations
     const [sales, debts, products, saleItems] = await Promise.all([
-      prisma.sale.findMany(),
+      prisma.sale.findMany({ where: { deletedAt: null } }),
       prisma.debt.findMany(),
       prisma.product.findMany(),
       prisma.saleItem.findMany({
         include: {
           product: true,
+        },
+        where: {
+          sale: {
+            deletedAt: null,
+          },
         },
       }),
     ]);

@@ -11,6 +11,10 @@ const saleSchema = z.object({
     })
   ),
   paymentStatus: z.enum(["PAID", "DEBT"]),
+  paymentMethod: z.enum(["CASH", "MPESA"]).optional(),
+  paidAmount: z.number().positive().optional(),
+  mobileNumber: z.string().optional(),
+  notes: z.string().optional(),
   debtorName: z.string().optional(),
   debtorPhone: z.string().optional(),
   saleDate: z.string().datetime().optional(),
@@ -20,6 +24,7 @@ const saleSchema = z.object({
 export async function GET() {
   try {
     const sales = await prisma.sale.findMany({
+      where: { deletedAt: null },
       include: {
         saleItems: {
           include: {
@@ -43,7 +48,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items, paymentStatus, debtorName, debtorPhone, saleDate } =
+    const { items, paymentStatus, paymentMethod, paidAmount, mobileNumber, notes, debtorName, debtorPhone, saleDate } =
       saleSchema.parse(body);
 
     // Validate stock availability
@@ -69,6 +74,14 @@ export async function POST(request: NextRequest) {
         saleDate: saleDate ? new Date(saleDate) : new Date(),
         totalAmount,
         paymentStatus,
+        notes: [
+          paymentMethod && `Method: ${paymentMethod}`,
+          paidAmount && `Paid: KES ${paidAmount.toFixed(2)}`,
+          mobileNumber && `Mobile: ${mobileNumber}`,
+          notes,
+        ]
+          .filter(Boolean)
+          .join(' | ') || undefined,
         saleItems: {
           create: items.map((item) => ({
             productId: item.productId,

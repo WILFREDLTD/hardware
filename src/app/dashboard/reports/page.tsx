@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import { formatKES } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Stats {
@@ -120,7 +121,7 @@ function DonutChart({ slices }: { slices: { label: string; value: number; color:
     <div className="flex items-center gap-6">
       <svg viewBox="0 0 160 160" className="flex-shrink-0" style={{ width: 130 }}>
         {paths.map((p, i) => <path key={i} d={p.path} fill={p.color} stroke="white" strokeWidth="2" />)}
-        <text x={cx} y={cy + 5} fontSize="12" fontWeight="600" fill="#374151" textAnchor="middle">{total}</text>
+        <text x={cx} y={cy + 5} fontSize="12" fontWeight="600" fill="#374151" textAnchor="middle">{formatKES(total)}</text>
       </svg>
       <div className="flex flex-col gap-2 flex-1 min-w-0">
         {slices.map(sl => (
@@ -421,9 +422,9 @@ export default function ReportsPage() {
             <div className="space-y-6">
               {/* KPI row */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <KPICard label="Revenue" value={`KES ${totalRevenue.toFixed(2)}`} sub={`${filteredSales.length} sales`} accent="#1a6b45" icon="💰" />
-                <KPICard label="Net Profit" value={`KES ${totalProfit.toFixed(2)}`} sub={`${margin.toFixed(1)}% margin`} accent="#2563eb" icon="📈" />
-                <KPICard label="Pending Debts" value={`KES ${stats?.debtsPending?.toFixed(2) || '0.00'}`} sub={`${pendingDebts.length} accounts`} accent="#ef4444" icon="💳" />
+                <KPICard label="Revenue" value={`KES ${formatKES(totalRevenue)}`} sub={`${filteredSales.length} sales`} accent="#1a6b45" icon="💰" />
+                <KPICard label="Net Profit" value={`KES ${formatKES(totalProfit)}`} sub={`${margin.toFixed(1)}% margin`} accent="#2563eb" icon="📈" />
+                <KPICard label="Pending Debts" value={`KES ${formatKES(stats?.debtsPending || 0)}`} sub={`${pendingDebts.length} accounts`} accent="#ef4444" icon="💳" />
                 <KPICard label="Low/Out Stock" value={lowStock + outOfStock} sub={`${outOfStock} out of stock`} accent="#f59e0b" icon="⚠️" />
               </div>
 
@@ -444,7 +445,7 @@ export default function ReportsPage() {
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
                           <span className="text-sm font-medium text-gray-800">{name}</span>
-                          <span className="text-sm font-bold text-gray-900">KES {data.rev.toFixed(2)}</span>
+                          <span className="text-sm font-bold text-gray-900">KES {formatKES(data.rev)}</span>
                         </div>
                         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${(data.rev / (topProducts[0]?.[1].rev || 1)) * 100}%`, backgroundColor: CATEGORY_COLORS[i] }} />
@@ -463,8 +464,8 @@ export default function ReportsPage() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <KPICard label="Total Sales" value={filteredSales.length} sub="transactions" accent="#1a6b45" icon="🧾" />
-                <KPICard label="Revenue" value={`KES ${totalRevenue.toFixed(2)}`} sub="gross" accent="#2563eb" icon="💰" />
-                <KPICard label="Avg. Order" value={`KES ${filteredSales.length ? (totalRevenue / filteredSales.length).toFixed(2) : '0.00'}`} accent="#7c3aed" icon="📊" />
+                <KPICard label="Revenue" value={`KES ${formatKES(totalRevenue)}`} sub="gross" accent="#2563eb" icon="💰" />
+                <KPICard label="Avg. Order" value={`KES ${formatKES(filteredSales.length ? totalRevenue / filteredSales.length : 0)}`} accent="#7c3aed" icon="📊" />
                 <KPICard label="Items Sold" value={filteredSales.reduce((s, x) => s + (x.saleItems?.reduce((a, it) => a + it.quantity, 0) || 0), 0)} accent="#db2777" icon="📦" />
               </div>
 
@@ -494,7 +495,7 @@ export default function ReportsPage() {
                           <td className="py-2.5 px-3 text-gray-400 text-xs">{i + 1}</td>
                           <td className="py-2.5 px-3 font-medium text-gray-900">{name}</td>
                           <td className="py-2.5 px-3 text-gray-600">{data.qty}</td>
-                          <td className="py-2.5 px-3 font-semibold text-gray-900">{data.rev.toFixed(2)}</td>
+                          <td className="py-2.5 px-3 font-semibold text-gray-900">{formatKES(data.rev)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -518,7 +519,7 @@ export default function ReportsPage() {
                         <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/70">
                           <td className="py-2.5 px-3 text-gray-600 text-xs">{new Date(s.saleDate).toLocaleString('en-KE')}</td>
                           <td className="py-2.5 px-3 text-gray-700 max-w-xs truncate">{s.saleItems?.map(it => `${it.product?.name} ×${it.quantity}`).join(', ')}</td>
-                          <td className="py-2.5 px-3 font-semibold text-gray-900">{s.totalAmount.toFixed(2)}</td>
+                          <td className="py-2.5 px-3 font-semibold text-gray-900">{formatKES(s.totalAmount)}</td>
                           <td className="py-2.5 px-3">
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{s.paymentStatus}</span>
                           </td>
@@ -536,7 +537,7 @@ export default function ReportsPage() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <KPICard label="Total Products" value={products.length} accent="#1a6b45" icon="📦" />
-                <KPICard label="Stock Value" value={`KES ${products.reduce((s, p) => s + p.currentStock * p.purchasePrice, 0).toFixed(0)}`} sub="at cost" accent="#2563eb" icon="💰" />
+                <KPICard label="Stock Value" value={`KES ${formatKES(products.reduce((s, p) => s + p.currentStock * p.purchasePrice, 0))}`} sub="at cost" accent="#2563eb" icon="💰" />
                 <KPICard label="Low Stock" value={lowStock} sub="items" accent="#f59e0b" icon="⚠️" />
                 <KPICard label="Out of Stock" value={outOfStock} sub="need reorder" accent="#ef4444" icon="🔴" />
               </div>
@@ -579,8 +580,8 @@ export default function ReportsPage() {
                             <td className="py-2.5 px-3 text-gray-600">{p.category}</td>
                             <td className="py-2.5 px-3 font-bold text-gray-900">{p.currentStock}</td>
                             <td className="py-2.5 px-3 text-gray-400">{p.minStockLevel}</td>
-                            <td className="py-2.5 px-3 text-gray-700">KES {p.unitPrice.toFixed(2)}</td>
-                            <td className="py-2.5 px-3 font-semibold text-gray-900">KES {(p.currentStock * p.purchasePrice).toFixed(2)}</td>
+                            <td className="py-2.5 px-3 text-gray-700">KES {formatKES(p.unitPrice)}</td>
+                            <td className="py-2.5 px-3 font-semibold text-gray-900">KES {formatKES(p.currentStock * p.purchasePrice)}</td>
                             <td className="py-2.5 px-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${st.cls}`}>{st.text}</span></td>
                           </tr>
                         );
@@ -596,9 +597,9 @@ export default function ReportsPage() {
           {(activeTab === 'debts') && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <KPICard label="Total Issued" value={`KES ${debts.reduce((s, d) => s + d.amount, 0).toFixed(2)}`} sub={`${debts.length} accounts`} accent="#ef4444" icon="💳" />
-                <KPICard label="Collected" value={`KES ${debts.reduce((s, d) => s + d.amountPaid, 0).toFixed(2)}`} accent="#1a6b45" icon="✅" />
-                <KPICard label="Outstanding" value={`KES ${debts.reduce((s, d) => s + (d.amount - d.amountPaid), 0).toFixed(2)}`} sub={`${pendingDebts.length} open`} accent="#f59e0b" icon="⏳" />
+                <KPICard label="Total Issued" value={`KES ${formatKES(debts.reduce((s, d) => s + d.amount, 0))}`} sub={`${debts.length} accounts`} accent="#ef4444" icon="💳" />
+                <KPICard label="Collected" value={`KES ${formatKES(debts.reduce((s, d) => s + d.amountPaid, 0))}`} accent="#1a6b45" icon="✅" />
+                <KPICard label="Outstanding" value={`KES ${formatKES(debts.reduce((s, d) => s + (d.amount - d.amountPaid), 0))}`} sub={`${pendingDebts.length} open`} accent="#f59e0b" icon="⏳" />
                 <KPICard label="Collection Rate" value={`${debts.reduce((s, d) => s + d.amount, 0) > 0 ? ((debts.reduce((s, d) => s + d.amountPaid, 0) / debts.reduce((s, d) => s + d.amount, 0)) * 100).toFixed(1) : 0}%`} accent="#2563eb" icon="📊" />
               </div>
 
@@ -620,7 +621,7 @@ export default function ReportsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-baseline">
                             <span className="text-sm font-medium text-gray-800 truncate">{d.debtorName}</span>
-                            <span className="text-xs font-bold text-red-600 ml-2">KES {(d.amount - d.amountPaid).toFixed(2)}</span>
+                            <span className="text-xs font-bold text-red-600 ml-2">KES {formatKES(d.amount - d.amountPaid)}</span>
                           </div>
                           <div className="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
                             <div className="h-full rounded-full bg-green-500" style={{ width: `${(d.amountPaid / d.amount) * 100}%` }} />
@@ -650,9 +651,9 @@ export default function ReportsPage() {
                         return (
                           <tr key={d.id} className="border-b border-gray-50 hover:bg-gray-50/70">
                             <td className="py-2.5 px-3 font-medium text-gray-900">{d.debtorName}</td>
-                            <td className="py-2.5 px-3 text-gray-700">{d.amount.toFixed(2)}</td>
-                            <td className="py-2.5 px-3 text-green-700 font-medium">{d.amountPaid.toFixed(2)}</td>
-                            <td className="py-2.5 px-3 text-red-600 font-medium">{(d.amount - d.amountPaid).toFixed(2)}</td>
+                            <td className="py-2.5 px-3 text-gray-700">{formatKES(d.amount)}</td>
+                            <td className="py-2.5 px-3 text-green-700 font-medium">{formatKES(d.amountPaid)}</td>
+                            <td className="py-2.5 px-3 text-red-600 font-medium">{formatKES(d.amount - d.amountPaid)}</td>
                             <td className="py-2.5 px-3 text-gray-600">{pct.toFixed(0)}%</td>
                             <td className="py-2.5 px-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${st}`}>{d.status}</span></td>
                           </tr>
@@ -669,9 +670,9 @@ export default function ReportsPage() {
           {(activeTab === 'profit') && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <KPICard label="Gross Revenue" value={`KES ${totalRevenue.toFixed(2)}`} accent="#1a6b45" icon="💰" />
-                <KPICard label="Total Cost" value={`KES ${totalCost.toFixed(2)}`} accent="#ef4444" icon="🏷️" />
-                <KPICard label="Net Profit" value={`KES ${totalProfit.toFixed(2)}`} sub={totalProfit >= 0 ? 'profitable' : 'loss'} accent={totalProfit >= 0 ? '#1a6b45' : '#ef4444'} icon={totalProfit >= 0 ? '📈' : '📉'} />
+                <KPICard label="Gross Revenue" value={`KES ${formatKES(totalRevenue)}`} accent="#1a6b45" icon="💰" />
+                <KPICard label="Total Cost" value={`KES ${formatKES(totalCost)}`} accent="#ef4444" icon="🏷️" />
+                <KPICard label="Net Profit" value={`KES ${formatKES(totalProfit)}`} sub={totalProfit >= 0 ? 'profitable' : 'loss'} accent={totalProfit >= 0 ? '#1a6b45' : '#ef4444'} icon={totalProfit >= 0 ? '📈' : '📉'} />
                 <KPICard label="Profit Margin" value={`${margin.toFixed(1)}%`} accent="#2563eb" icon="📊" />
               </div>
 
@@ -689,7 +690,7 @@ export default function ReportsPage() {
                     return (
                       <div key={i} className={`flex items-center justify-between py-1 ${row.bold ? 'font-bold text-base' : 'text-sm'}`}>
                         <span className="text-gray-700">{row.label}</span>
-                        <span className={row.color}>{row.sign} KES {Math.abs(row.value).toFixed(2)}</span>
+                        <span className={row.color}>{row.sign} KES {formatKES(Math.abs(row.value))}</span>
                       </div>
                     );
                   })}
@@ -738,9 +739,9 @@ export default function ReportsPage() {
                         return (
                           <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/70">
                             <td className="py-2.5 px-3 text-gray-500 text-xs">{new Date(s.saleDate).toLocaleDateString('en-KE')}</td>
-                            <td className="py-2.5 px-3 text-gray-900 font-medium">{s.totalAmount.toFixed(2)}</td>
-                            <td className="py-2.5 px-3 text-red-600">{cost.toFixed(2)}</td>
-                            <td className={`py-2.5 px-3 font-semibold ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{profit.toFixed(2)}</td>
+                            <td className="py-2.5 px-3 text-gray-900 font-medium">{formatKES(s.totalAmount)}</td>
+                            <td className="py-2.5 px-3 text-red-600">{formatKES(cost)}</td>
+                            <td className={`py-2.5 px-3 font-semibold ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatKES(profit)}</td>
                             <td className="py-2.5 px-3">
                               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${mg >= 20 ? 'bg-green-100 text-green-700' : mg >= 10 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                                 {mg.toFixed(1)}%

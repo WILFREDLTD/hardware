@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import { formatKES } from '@/lib/utils';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -76,15 +77,15 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
-            label: 'Revenue Today', value: `KES ${stats?.totalRevenue?.toFixed(2) || '0.00'}`,
+            label: 'Revenue Today', value: `KES ${formatKES(stats?.totalRevenue || 0)}`,
             sub: `${stats?.itemsSold || 0} items sold`, icon: '💰', accent: '#1a6b45',
           },
           {
-            label: 'Net Profit', value: `KES ${stats?.profit?.toFixed(2) || '0.00'}`,
+            label: 'Net Profit', value: `KES ${formatKES(stats?.profit || 0)}`,
             sub: `${profitMargin.toFixed(1)}% margin`, icon: '📈', accent: '#2563eb',
           },
           {
-            label: 'Pending Debts', value: `KES ${stats?.debtsPending?.toFixed(2) || '0.00'}`,
+            label: 'Pending Debts', value: `KES ${formatKES(stats?.debtsPending || 0)}`,
             sub: 'to be collected', icon: '💳', accent: '#ef4444',
           },
           {
@@ -123,9 +124,9 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Total Issued', value: `KES ${stats?.totalDebts?.toFixed(2) || '0.00'}`, color: 'text-gray-900', bg: 'bg-gray-50' },
-              { label: 'Collected', value: `KES ${stats?.debtsCollected?.toFixed(2) || '0.00'}`, color: 'text-green-700', bg: 'bg-green-50' },
-              { label: 'Outstanding', value: `KES ${stats?.debtsPending?.toFixed(2) || '0.00'}`, color: 'text-red-600', bg: 'bg-red-50' },
+              { label: 'Total Issued', value: `KES ${formatKES(stats?.totalDebts || 0)}`, color: 'text-gray-900', bg: 'bg-gray-50' },
+              { label: 'Collected', value: `KES ${formatKES(stats?.debtsCollected || 0)}`, color: 'text-green-700', bg: 'bg-green-50' },
+              { label: 'Outstanding', value: `KES ${formatKES(stats?.debtsPending || 0)}`, color: 'text-red-600', bg: 'bg-red-50' },
             ].map(d => (
               <div key={d.label} className={`${d.bg} rounded-xl px-4 py-3`}>
                 <div className="text-xs text-gray-500 mb-1">{d.label}</div>

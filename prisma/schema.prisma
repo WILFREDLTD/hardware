@@ -76,15 +76,17 @@ enum TransactionType {
 model Sale {
   id            String        @id @default(cuid())
   saleDate      DateTime      @default(now())
-  totalAmount   Float
-  paymentStatus PaymentStatus
-  notes         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  totalAmount    Float
+  paymentStatus  PaymentStatus
+  notes          String?
+  deletedAt      DateTime?
+  deletionReason String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   // Relations
-  saleItems     SaleItem[]
-  debt          Debt?
+  saleItems      SaleItem[]
+  debt           Debt?
 
   @@index([saleDate])
   @@index([paymentStatus])

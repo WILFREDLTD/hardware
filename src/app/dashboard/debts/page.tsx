@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { formatKES } from '@/lib/utils';
 
 interface Debt {
   id: string;
@@ -109,9 +110,9 @@ export default function DebtsPage() {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Owed', value: `KES ${totalDebts.toFixed(2)}`, sub: `${debts.length} debtors`, icon: '💳', color: 'text-red-500' },
-          { label: 'Collected', value: `KES ${totalPaid.toFixed(2)}`, sub: `${collectionRate.toFixed(0)}% rate`, icon: '✅', color: 'text-green-700' },
-          { label: 'Pending', value: `KES ${totalPending.toFixed(2)}`, sub: `${debts.filter(d => d.status !== 'PAID').length} outstanding`, icon: '⏳', color: 'text-amber-600' },
+          { label: 'Total Owed', value: `KES ${formatKES(totalDebts)}`, sub: `${debts.length} debtors`, icon: '💳', color: 'text-red-500' },
+          { label: 'Collected', value: `KES ${formatKES(totalPaid)}`, sub: `${collectionRate.toFixed(0)}% rate`, icon: '✅', color: 'text-green-700' },
+          { label: 'Pending', value: `KES ${formatKES(totalPending)}`, sub: `${debts.filter(d => d.status !== 'PAID').length} outstanding`, icon: '⏳', color: 'text-amber-600' },
           { label: 'Fully Paid', value: debts.filter(d => d.status === 'PAID').length, sub: 'accounts cleared', icon: '🎉', color: 'text-gray-900' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-100 px-4 py-3">
@@ -132,8 +133,8 @@ export default function DebtsPage() {
           <div className="h-full rounded-full transition-all duration-700" style={{ width: `${collectionRate}%`, backgroundColor: '#1a6b45' }} />
         </div>
         <div className="flex justify-between mt-2 text-xs text-gray-400">
-          <span>KES 0</span>
-          <span>KES {totalDebts.toFixed(2)}</span>
+          <span>KES {formatKES(0)}</span>
+          <span>KES {formatKES(totalDebts)}</span>
         </div>
       </div>
 
@@ -201,15 +202,15 @@ export default function DebtsPage() {
                     <div className="flex items-center gap-3">
                       <ProgressRing pct={(debt.amountPaid / debt.amount) * 100} />
                       <div>
-                        <div className="text-xs font-medium text-gray-700">KES {debt.amountPaid.toFixed(2)}</div>
-                        <div className="text-xs text-gray-400">of KES {debt.amount.toFixed(2)}</div>
+                        <div className="text-xs font-medium text-gray-700">KES {formatKES(debt.amountPaid)}</div>
+                        <div className="text-xs text-gray-400">of KES {formatKES(debt.amount)}</div>
                       </div>
                     </div>
                   </td>
                   <td className="py-4 px-4">
-                    <div className="text-sm font-bold text-gray-900">KES {debt.amount.toFixed(2)}</div>
+                    <div className="text-sm font-bold text-gray-900">KES {formatKES(debt.amount)}</div>
                     {debt.status !== 'PAID' && (
-                      <div className="text-xs text-red-500">KES {(debt.amount - debt.amountPaid).toFixed(2)} remaining</div>
+                      <div className="text-xs text-red-500">KES {formatKES(debt.amount - debt.amountPaid)} remaining</div>
                     )}
                   </td>
                   <td className="py-4 px-4">
@@ -253,14 +254,14 @@ export default function DebtsPage() {
             <div className="bg-gray-50 rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-gray-500">Total Debt</span>
-                <span className="text-lg font-bold text-gray-900">KES {selectedDebt.amount.toFixed(2)}</span>
+                <span className="text-lg font-bold text-gray-900">KES {formatKES(selectedDebt.amount)}</span>
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
                 <div className="h-full rounded-full" style={{ width: `${(selectedDebt.amountPaid / selectedDebt.amount) * 100}%`, backgroundColor: '#1a6b45' }} />
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-green-600 font-medium">Paid: KES {selectedDebt.amountPaid.toFixed(2)}</span>
-                <span className="text-red-500 font-medium">Remaining: KES {(selectedDebt.amount - selectedDebt.amountPaid).toFixed(2)}</span>
+                <span className="text-green-600 font-medium">Paid: KES {formatKES(selectedDebt.amountPaid)}</span>
+                <span className="text-red-500 font-medium">Remaining: KES {formatKES(selectedDebt.amount - selectedDebt.amountPaid)}</span>
               </div>
             </div>
             <Input
