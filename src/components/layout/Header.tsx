@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-
 interface HeaderProps {
   title: string;
   subtitle?: string;
@@ -10,10 +8,10 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ title, subtitle, action }) => {
   return (
-    <div className="flex items-center justify-between mb-8">
+    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-10">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-        {subtitle && <p className="text-gray-500 mt-1">{subtitle}</p>}
+        <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">{title}</h1>
+        {subtitle && <p className="text-base md:text-lg text-slate-600 mt-2 max-w-2xl">{subtitle}</p>}
       </div>
       {action && <div>{action}</div>}
     </div>

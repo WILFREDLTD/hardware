@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
-import { StatCard, Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 
@@ -16,44 +15,50 @@ interface DashboardStats {
   lowStockItems: number;
 }
 
+const quickActions = [
+  { label: 'Record Sale', href: '/dashboard/sales', icon: '🧾', color: '#1a6b45', desc: 'Add a new transaction' },
+  { label: 'Add Product', href: '/dashboard/inventory', icon: '📦', color: '#2563eb', desc: 'Update your stock' },
+  { label: 'Record Payment', href: '/dashboard/debts', icon: '💳', color: '#7c3aed', desc: 'Log debt repayment' },
+]
+
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const now = new Date()
+  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening'
 
   useEffect(() => {
-    const fetchStats = async () => {
+    (async () => {
       try {
-        const response = await fetch('/api/reports/stats');
-        if (!response.ok) throw new Error('Failed to fetch stats');
-        const data = await response.json();
-        setStats(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
+        const res = await fetch('/api/reports/stats')
+        if (!res.ok) throw new Error('Failed to fetch stats')
+        setStats(await res.json())
+      } catch (e: any) { setError(e.message) }
+      finally { setLoading(false) }
+    })()
   }, []);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div className="w-10 h-10 border-2 border-gray-200 border-t-green-600 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Loading dashboard…</p>
         </div>
       </div>
-    );
+    )
   }
 
+  const profitMargin = stats?.totalRevenue ? ((stats.profit / stats.totalRevenue) * 100) : 0
+  const debtCollectionRate = stats?.totalDebts ? ((stats.debtsCollected / stats.totalDebts) * 100) : 0
+
   return (
-    <div>
+    <div className="space-y-6">
       <Header
-        title="Dashboard"
-        subtitle="Welcome back to your hardware store"
+        title={`${greeting} 👋`}
+        subtitle="Here's what's happening at your store today"
         action={
           <Link href="/dashboard/sales">
             <Button>+ New Sale</Button>
@@ -62,85 +67,111 @@ export default function DashboardPage() {
       />
 
       {error && (
-        <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700">
-          {error}
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2">
+          <span>⚠️</span> {error}
         </div>
       )}
 
-      {/* Statistics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          label="Today Revenue"
-          value={`$${stats?.totalRevenue?.toFixed(2) || '0.00'}`}
-          icon="💰"
-          color="green"
-        />
-        <StatCard
-          label="Items Sold"
-          value={stats?.itemsSold || 0}
-          icon="📦"
-          color="blue"
-        />
-        <StatCard
-          label="Pending Debts"
-          value={`$${stats?.debtsPending?.toFixed(2) || '0.00'}`}
-          icon="💳"
-          color="red"
-        />
-        <StatCard
-          label="Profit"
-          value={`$${stats?.profit?.toFixed(2) || '0.00'}`}
-          icon="📈"
-          color="green"
-        />
-      </div>
-
-      {/* Additional Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card>
-          <h2 className="text-lg font-bold mb-4">Total Debts Collected</h2>
-          <p className="text-3xl font-bold text-green-600">
-            ${stats?.debtsCollected?.toFixed(2) || '0.00'}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Out of ${stats?.totalDebts?.toFixed(2) || '0.00'} total
-          </p>
-        </Card>
-
-        <Card>
-          <h2 className="text-lg font-bold mb-4">Low Stock Alert</h2>
-          <p className="text-3xl font-bold text-danger-600">
-            {stats?.lowStockItems || 0}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">Items below minimum level</p>
-          <Link href="/dashboard/inventory">
-            <Button variant="secondary" size="sm" className="mt-4 w-full">
-              View Inventory
-            </Button>
-          </Link>
-        </Card>
-
-        <Card>
-          <h2 className="text-lg font-bold mb-4">Quick Actions</h2>
-          <div className="space-y-2">
-            <Link href="/dashboard/sales">
-              <Button variant="secondary" size="sm" className="w-full">
-                Record Sale
-              </Button>
-            </Link>
-            <Link href="/dashboard/inventory">
-              <Button variant="secondary" size="sm" className="w-full">
-                Add Item
-              </Button>
-            </Link>
-            <Link href="/dashboard/debts">
-              <Button variant="secondary" size="sm" className="w-full">
-                Record Payment
-              </Button>
-            </Link>
+      {/* Primary KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          {
+            label: 'Revenue Today', value: `KES ${stats?.totalRevenue?.toFixed(2) || '0.00'}`,
+            sub: `${stats?.itemsSold || 0} items sold`, icon: '💰', accent: '#1a6b45',
+          },
+          {
+            label: 'Net Profit', value: `KES ${stats?.profit?.toFixed(2) || '0.00'}`,
+            sub: `${profitMargin.toFixed(1)}% margin`, icon: '📈', accent: '#2563eb',
+          },
+          {
+            label: 'Pending Debts', value: `KES ${stats?.debtsPending?.toFixed(2) || '0.00'}`,
+            sub: 'to be collected', icon: '💳', accent: '#ef4444',
+          },
+          {
+            label: 'Low Stock', value: stats?.lowStockItems || 0,
+            sub: 'items need restock', icon: '⚠️', accent: '#f59e0b',
+          },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-xl border border-gray-100 px-4 py-4 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full rounded-l-xl" style={{ backgroundColor: s.accent }} />
+            <div className="pl-2">
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">{s.label}</div>
+              <div className="text-2xl font-bold text-gray-900 mb-1">{s.icon} {s.value}</div>
+              <div className="text-xs text-gray-400">{s.sub}</div>
+            </div>
           </div>
-        </Card>
+        ))}
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Debt overview */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5 space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-gray-700">Debt Collection Overview</div>
+            <Link href="/dashboard/debts" className="text-xs font-medium hover:underline" style={{ color: '#1a6b45' }}>View all →</Link>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-gray-500">Collection Rate</span>
+              <span className="text-sm font-bold" style={{ color: '#1a6b45' }}>{debtCollectionRate.toFixed(1)}%</span>
+            </div>
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${debtCollectionRate}%`, backgroundColor: '#1a6b45' }} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Total Issued', value: `KES ${stats?.totalDebts?.toFixed(2) || '0.00'}`, color: 'text-gray-900', bg: 'bg-gray-50' },
+              { label: 'Collected', value: `KES ${stats?.debtsCollected?.toFixed(2) || '0.00'}`, color: 'text-green-700', bg: 'bg-green-50' },
+              { label: 'Outstanding', value: `KES ${stats?.debtsPending?.toFixed(2) || '0.00'}`, color: 'text-red-600', bg: 'bg-red-50' },
+            ].map(d => (
+              <div key={d.label} className={`${d.bg} rounded-xl px-4 py-3`}>
+                <div className="text-xs text-gray-500 mb-1">{d.label}</div>
+                <div className={`text-sm font-bold ${d.color}`}>{d.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <div className="bg-white rounded-xl border border-gray-100 p-5">
+          <div className="text-sm font-semibold text-gray-700 mb-4">Quick Actions</div>
+          <div className="space-y-3">
+            {quickActions.map(a => (
+              <Link key={a.label} href={a.href}>
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm flex-shrink-0" style={{ backgroundColor: a.color }}>
+                    {a.icon}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-gray-800">{a.label}</div>
+                    <div className="text-xs text-gray-400">{a.desc}</div>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Low stock alert */}
+      {(stats?.lowStockItems || 0) > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
+          <div className="text-2xl">⚠️</div>
+          <div className="flex-1">
+            <div className="text-sm font-semibold text-amber-800">Low Stock Alert</div>
+            <div className="text-sm text-amber-600">{stats?.lowStockItems} product{stats?.lowStockItems !== 1 ? 's are' : ' is'} running below minimum stock levels.</div>
+          </div>
+          <Link href="/dashboard/inventory">
+            <button className="px-4 py-2 rounded-lg text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 transition-colors flex-shrink-0">
+              Review Inventory
+            </button>
+          </Link>
+        </div>
+      )}
     </div>
-  );
+  )
 }

@@ -6,10 +6,40 @@
 
 html {
   @apply scroll-smooth;
+  font-size: 16px;
 }
 
 body {
-  @apply bg-white text-gray-900 antialiased;
+  @apply bg-white text-slate-900 antialiased font-sans text-base leading-7;
+  color: #0f172a;
+}
+
+body, button, input, select, textarea, a, p, span, label, li, th, td {
+  @apply text-base leading-7 text-slate-900;
+}
+
+h1 {
+  @apply text-4xl md:text-5xl font-extrabold tracking-tight;
+}
+
+h2 {
+  @apply text-3xl md:text-4xl font-semibold tracking-tight;
+}
+
+h3 {
+  @apply text-2xl md:text-3xl font-semibold tracking-tight;
+}
+
+h4 {
+  @apply text-xl font-semibold tracking-tight;
+}
+
+p, span, label, a, li, td, th {
+  @apply text-base leading-8 text-slate-700;
+}
+
+button, input, select, textarea {
+  @apply text-base;
 }
 
 /* Custom scrollbar */
@@ -18,15 +48,15 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  @apply bg-slate-100;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded;
+  @apply bg-slate-300 rounded;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  @apply bg-slate-400;
 }
 
 /* Animations */

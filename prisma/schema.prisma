@@ -8,6 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["hardware"]
 }
 
 // Store Owner/Admin model - Single tenant (Optional, for future multi-tenant expansion)
@@ -21,6 +22,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@map("users")
+  @@schema("hardware")
 }
 
 // Product/Item model
@@ -43,6 +45,7 @@ model Product {
   @@index([category])
   @@index([sku])
   @@map("products")
+  @@schema("hardware")
 }
 
 // Inventory Transaction model - Track items in/out
@@ -59,11 +62,14 @@ model InventoryTransaction {
   @@index([productId])
   @@index([date])
   @@map("inventory_transactions")
+  @@schema("hardware")
 }
 
 enum TransactionType {
   IN
   OUT
+
+  @@schema("hardware")
 }
 
 // Sale model - Record all sales
@@ -83,11 +89,14 @@ model Sale {
   @@index([saleDate])
   @@index([paymentStatus])
   @@map("sales")
+  @@schema("hardware")
 }
 
 enum PaymentStatus {
   PAID
   DEBT
+
+  @@schema("hardware")
 }
 
 // Sale Items - Line items in a sale
@@ -105,6 +114,7 @@ model SaleItem {
   @@index([saleId])
   @@index([productId])
   @@map("sale_items")
+  @@schema("hardware")
 }
 
 // Debt model - Track credit/debt sales
@@ -130,12 +140,15 @@ model Debt {
   @@index([date])
   @@index([debtorPhone])
   @@map("debts")
+  @@schema("hardware")
 }
 
 enum DebtStatus {
   PENDING
   PARTIAL
   PAID
+
+  @@schema("hardware")
 }
 
 // Debt Payment model - Track payments received on debts
@@ -151,6 +164,7 @@ model DebtPayment {
   @@index([debtId])
   @@index([date])
   @@map("debt_payments")
+  @@schema("hardware")
 }
 
 // Report model - Store generated reports
@@ -170,10 +184,46 @@ model Report {
   @@index([type])
   @@index([period])
   @@map("reports")
+  @@schema("hardware")
 }
 
 enum ReportType {
   DAILY
   WEEKLY
   MONTHLY
+
+  @@schema("hardware")
+}
+
+// Hardware list model - a simple list/category container for hardware items
+model HardwareList {
+  id        String     @id @default(cuid())
+  name      String
+  description String?
+  hardwares Hardware[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("hardware_lists")
+  @@schema("hardware")
+}
+
+// Hardware model - represents specialized hardware items (separate from Product)
+model Hardware {
+  id           String       @id @default(cuid())
+  name         String
+  listId       String?
+  list         HardwareList? @relation(fields: [listId], references: [id], onDelete: SetNull)
+  sku          String       @unique
+  description  String?
+  quantity     Int          @default(0)
+  unitPrice    Float
+  purchasePrice Float
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([sku])
+  @@index([listId])
+  @@map("hardwares")
+  @@schema("hardware")
 }

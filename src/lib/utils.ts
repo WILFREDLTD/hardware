@@ -45,7 +45,7 @@ export const calculateStats = {
    */
   profit: (sales: any[], saleItems: any[]): number => {
     const revenue = calculateStats.totalRevenue(sales);
-    const cost = saleItems.reduce((sum, item) => {
+    const cost = saleItems.reduce((sum: number, _item: any) => {
       // This needs product data - to be used in context
       return sum;
     }, 0);

@@ -53,7 +53,7 @@ export async function POST(
     });
 
     // Determine new status
-    let newStatus = debt.status;
+    let newStatus: string = debt.status;
     if (newAmountPaid === debt.amount) {
       newStatus = "PAID";
     } else if (newAmountPaid > 0) {
