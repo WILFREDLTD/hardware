@@ -1,0 +1,179 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Store Owner/Admin model - Single tenant (Optional, for future multi-tenant expansion)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// Product/Item model
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  category      String
+  sku           String   @unique
+  currentStock  Int      @default(0)
+  minStockLevel Int      @default(5)
+  unitPrice     Float
+  purchasePrice Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  saleItems     SaleItem[]
+  transactions  InventoryTransaction[]
+
+  @@index([category])
+  @@index([sku])
+  @@map("products")
+}
+
+// Inventory Transaction model - Track items in/out
+model InventoryTransaction {
+  id        String            @id @default(cuid())
+  productId String
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      TransactionType
+  quantity  Int
+  notes     String?
+  date      DateTime          @default(now())
+  createdAt DateTime          @default(now())
+
+  @@index([productId])
+  @@index([date])
+  @@map("inventory_transactions")
+}
+
+enum TransactionType {
+  IN
+  OUT
+}
+
+// Sale model - Record all sales
+model Sale {
+  id            String        @id @default(cuid())
+  saleDate      DateTime      @default(now())
+  totalAmount   Float
+  paymentStatus PaymentStatus
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  saleItems     SaleItem[]
+  debt          Debt?
+
+  @@index([saleDate])
+  @@index([paymentStatus])
+  @@map("sales")
+}
+
+enum PaymentStatus {
+  PAID
+  DEBT
+}
+
+// Sale Items - Line items in a sale
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Float
+  total     Float
+  discount  Float   @default(0)
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("sale_items")
+}
+
+// Debt model - Track credit/debt sales
+model Debt {
+  id          String     @id @default(cuid())
+  saleId      String?    @unique
+  sale        Sale?      @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  debtorName  String
+  debtorPhone String // Phone number for follow-up
+  amount      Float
+  amountPaid  Float      @default(0)
+  date        DateTime   @default(now())
+  dueDate     DateTime?
+  status      DebtStatus
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  payments    DebtPayment[]
+
+  @@index([status])
+  @@index([date])
+  @@index([debtorPhone])
+  @@map("debts")
+}
+
+enum DebtStatus {
+  PENDING
+  PARTIAL
+  PAID
+}
+
+// Debt Payment model - Track payments received on debts
+model DebtPayment {
+  id        String   @id @default(cuid())
+  debtId    String
+  debt      Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  amount    Float
+  date      DateTime @default(now())
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([debtId])
+  @@index([date])
+  @@map("debt_payments")
+}
+
+// Report model - Store generated reports
+model Report {
+  id             String     @id @default(cuid())
+  type           ReportType
+  period         String
+  totalRevenue   Float      @default(0)
+  totalSales     Int        @default(0)
+  totalDebts     Float      @default(0)
+  debtsCollected Float      @default(0)
+  debtsPending   Float      @default(0)
+  bestSellers    Json?      // JSON array of top products
+  data           Json?
+  generatedAt    DateTime   @default(now())
+
+  @@index([type])
+  @@index([period])
+  @@map("reports")
+}
+
+enum ReportType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
