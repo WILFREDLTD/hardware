@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ email: 'wilfred@example.com', password: '123456' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -48,7 +48,7 @@ export default function LoginPage() {
             label="Email"
             type="email"
             required
-            value={formData.email}
+            value={formData.email || 'wilfred@example.com'}
             onChange={(e) =>
               setFormData({ ...formData, email: e.target.value })
             }
@@ -57,11 +57,14 @@ export default function LoginPage() {
             label="Password"
             type="password"
             required
-            value={formData.password}
+            placeholder="123456"
+            value={formData.password || '123456'}
             onChange={(e) =>
               setFormData({ ...formData, password: e.target.value })
             }
           />
+
+          <p className="text-sm text-gray-500">Password is <strong>123456</strong> for this demo test.</p>
 
           <Button
             type="submit"

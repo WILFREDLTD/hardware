@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 import { formatKES } from '@/lib/utils';
@@ -68,7 +69,7 @@ export default function DashboardPage() {
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'wilfred') {
+    if (password === '123456') {
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('dashboardLocked', 'false');
         window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
@@ -106,13 +107,15 @@ export default function DashboardPage() {
           <Modal title="Enter Password" onClose={handlePasswordClose} onSubmit={handlePasswordSubmit} submitLabel="Unlock">
             <div className="space-y-4">
               <p className="text-sm text-gray-600">This dashboard is locked. Enter the password to continue.</p>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input
+              <Input
+                label="Password"
                 type="password"
+                required
+                placeholder="123456"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30"
               />
+              <p className="text-sm text-gray-500">Password is <strong>123456</strong> for this demo test.</p>
               {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
             </div>
           </Modal>
