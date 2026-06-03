@@ -59,3 +59,64 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// PUT - Update product
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, ...updateData } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Product ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate the update data - allow partial updates
+    const updateSchema = z.object({
+      name: z.string().min(1).optional(),
+      category: z.string().min(1).optional(),
+      sku: z.string().min(1).optional(),
+      currentStock: z.number().int().nonnegative().optional(),
+      minStockLevel: z.number().int().nonnegative().optional(),
+      unitPrice: z.number().positive().optional(),
+      purchasePrice: z.number().positive().optional(),
+    });
+
+    const validatedData = updateSchema.parse(updateData);
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: validatedData,
+    });
+
+    return NextResponse.json(product);
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input", details: error.issues },
+        { status: 400 }
+      );
+    }
+
+    if (error.code === "P2025") {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "SKU already exists" },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Failed to update product" },
+      { status: 500 }
+    );
+  }
+}

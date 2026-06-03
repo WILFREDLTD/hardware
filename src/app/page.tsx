@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const features = [
   {
@@ -9,40 +9,36 @@ const features = [
     title: 'Inventory Management',
     subtitle: 'Know Exactly What Is In Stock',
     description: 'Track products, monitor stock levels, and receive alerts when items are running low.',
-    color: 'from-orange-500 to-amber-400',
-    bg: 'bg-orange-50',
-    border: 'border-orange-200',
-    accent: 'text-orange-600',
+    accent: '#ea580c',
+    bg: '#fff7ed',
+    border: '#fed7aa',
   },
   {
     icon: '🧾',
     title: 'Sales Tracking',
     subtitle: 'Record Every Sale',
     description: 'Create sales quickly and keep a complete history of every transaction.',
-    color: 'from-blue-600 to-cyan-400',
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    accent: 'text-blue-600',
+    accent: '#2563eb',
+    bg: '#eff6ff',
+    border: '#bfdbfe',
   },
   {
     icon: '📋',
     title: 'Debt Management',
     subtitle: 'Track Customer Credit Easily',
     description: 'Record debt sales, monitor outstanding balances, and track repayments.',
-    color: 'from-rose-500 to-pink-400',
-    bg: 'bg-rose-50',
-    border: 'border-rose-200',
-    accent: 'text-rose-600',
+    accent: '#e11d48',
+    bg: '#fff1f2',
+    border: '#fecdd3',
   },
   {
     icon: '📊',
     title: 'Business Reports',
     subtitle: 'See How Your Business Is Performing',
     description: 'View daily, weekly, and monthly sales reports and monitor revenue trends.',
-    color: 'from-emerald-600 to-green-400',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
-    accent: 'text-emerald-600',
+    accent: '#059669',
+    bg: '#ecfdf5',
+    border: '#a7f3d0',
   },
 ];
 
@@ -65,10 +61,13 @@ const faqs = [
   { q: 'Can I manage inventory?', a: 'Yes. Track stock levels, stock movements, and low-stock alerts.' },
   { q: 'Can I view sales reports?', a: 'Yes. Generate reports for daily, weekly, and monthly performance.' },
   { q: 'Is my data secure?', a: 'Yes. Access is protected through secure authentication and encrypted data storage.' },
+  { q: 'Does it work on mobile?', a: 'Yes. The system is fully responsive and works on any device or screen size.' },
+  { q: 'Can multiple staff use it?', a: 'Yes. Multiple team members can log in with individual accounts and permissions.' },
 ];
 
 const sections = [
   {
+    tag: 'Stock Control',
     title: 'Keep stock accurate without paper',
     description: 'Capture every product and quantity. Set reorder points, get alerts when parts are low, and keep your shelves aligned with your books.',
     bullets: ['Add products with item details', 'Monitor low stock in real time', 'Avoid lost sales from missing inventory'],
@@ -76,231 +75,417 @@ const sections = [
     imageAlt: 'Tools and hardware on store shelves',
   },
   {
+    tag: 'Sales Recording',
     title: 'Record sales quickly at the counter',
     description: 'Add items, print receipts, and close transactions fast so your shop moves with customers instead of slowing them down.',
-    bullets: ['Scan or search products fast', 'Update stock instantly', 'Match every sale with inventory changes'],
+    bullets: ['Scan or search products fast', 'Update stock instantly on every sale', 'Match every sale with inventory changes'],
     image: 'https://plus.unsplash.com/premium_photo-1663011078369-1613ac0a4758?w=1200&auto=format&fit=crop',
-    imageAlt: 'Customers choosing nails and hardware supplies',
+    imageAlt: 'Customers choosing hardware supplies',
   },
   {
+    tag: 'Debt Tracking',
     title: 'Track customer credit clearly',
     description: 'Know who owes what and manage repayments without guesswork. This reduces overdue balances and improves cash collection.',
-    bullets: ['Log debt sales with names', 'Monitor outstanding balances', 'Mark payments as received'],
+    bullets: ['Log debt sales with customer names', 'Monitor outstanding balances at a glance', 'Mark payments as received instantly'],
     image: 'https://images.unsplash.com/photo-1758348609464-770fef766474?w=1200&auto=format&fit=crop',
-    imageAlt: 'Cluttered storefront with hardware and tools',
+    imageAlt: 'Hardware store front',
   },
+];
+
+const stats = [
+  { value: '100%', label: 'Paperless records' },
+  { value: '< 30s', label: 'To record a sale' },
+  { value: '0 KES', label: 'Forgotten debts' },
+  { value: '24/7', label: 'Access your data' },
 ];
 
 export default function Home() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.clear();
+    }
+  }, []);
+
   return (
-    <main className="min-h-screen bg-white font-sans text-slate-900">
-      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-700 text-white font-bold text-lg">V</div>
+    <main style={{ minHeight: '100vh', background: '#ffffff', fontFamily: "'DM Sans', sans-serif", color: '#0f172a' }}>
+
+      {/* ── FONT IMPORT ── */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:ital,wght@0,700;0,900;1,700&display=swap');
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { margin: 0; }
+      `}</style>
+
+      {/* ── NAV ── */}
+      <nav style={{
+        position: 'sticky', top: 0, zIndex: 50,
+        background: 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid #e2e8f0',
+        padding: '0 48px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        height: '72px',
+      }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '42px', height: '42px', borderRadius: '12px',
+            background: 'linear-gradient(135deg, #065f46, #059669)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+            </svg>
+          </div>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Vico Softwares</p>
-            <p className="text-xs text-slate-500">Hardware Store System</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>Vico Softwares</p>
+            <p style={{ margin: 0, fontSize: '11px', color: '#64748b', letterSpacing: '0.04em', fontWeight: 500 }}>Hardware Store System</p>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-8 text-sm text-slate-600">
-          <a href="#faq" className="hover:text-slate-900 transition-colors">FAQ</a>
+
+        {/* Nav links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
+          {['Features',  'FAQ'].map(link => (
+            <a key={link} href={`#${link.toLowerCase().replace(' ', '-')}`} style={{
+              fontSize: '14px', fontWeight: 500, color: '#475569', textDecoration: 'none',
+              transition: 'color .2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#0f172a')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+            >{link}</a>
+          ))}
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{
+              background: '#065f46', color: '#fff',
+              border: 'none', borderRadius: '100px',
+              padding: '10px 22px', fontSize: '14px', fontWeight: 600,
+              cursor: 'pointer', transition: 'background .2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#047857')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#065f46')}
+          >
+            Open Dashboard
+          </button>
         </div>
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="rounded-full bg-emerald-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/30 transition hover:bg-emerald-800"
-        >
-          Open Dashboard
-        </button>
       </nav>
 
-      <section className="relative overflow-hidden bg-white text-slate-900">
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-50 to-white" />
-        <div className="relative mx-auto max-w-7xl px-6 py-24 lg:px-12">
-          <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-            <div className="space-y-6">
-              <p className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">
-                Hardware store operations
-              </p>
-              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-                Run your store with accurate stock, fast sales, and clear customer credit.
-              </h1>
-              <p className="max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
-                Capture inventory, record sales, and track debts in one system designed for hardware shop owners.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="rounded-full bg-emerald-700 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/40 transition hover:bg-emerald-800"
-                >
-                  Open dashboard
-                </button>
-                <a
-                  href="#sections"
-                  className="rounded-full border border-slate-200 bg-white px-7 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                >
-                  See the workflow
-                </a>
-              </div>
+      {/* ── HERO ── */}
+      <section style={{ position: 'relative', overflow: 'hidden', background: '#f8fafc' }}>
+        {/* Background image with overlay */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+          <img
+            src="https://images.unsplash.com/photo-1759200165738-6366977a73c6?w=1600&auto=format&fit=crop"
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, rgba(2,44,34,0.93) 0%, rgba(6,78,59,0.88) 40%, rgba(6,78,59,0.55) 70%, transparent 100%)' }} />
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '1400px', margin: '0 auto', padding: '120px 48px 100px' }}>
+          <div style={{ maxWidth: '680px' }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(52,211,153,0.35)',
+              borderRadius: '100px', padding: '6px 16px', marginBottom: '28px',
+            }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#6ee7b7', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Hardware Store Operations</span>
             </div>
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-50 shadow-xl">
-              <img
-                src="https://images.unsplash.com/photo-1759200165738-6366977a73c6?w=1200&auto=format&fit=crop"
-                alt="Hardware store tools display"
-                className="h-[420px] w-full object-cover"
-              />
+
+            <h1 style={{
+              fontFamily: "'Fraunces', serif",
+              fontSize: 'clamp(42px, 5vw, 68px)',
+              fontWeight: 900, lineHeight: 1.06,
+              color: '#ffffff', margin: '0 0 24px',
+              letterSpacing: '-0.02em',
+            }}>
+              Stop Losing Money to Missing Stock and Unrecorded Sales.
+            </h1>
+
+            <p style={{ fontSize: '18px', lineHeight: 1.75, color: 'rgba(255,255,255,0.75)', margin: '0 0 40px', maxWidth: '540px' }}>
+              Manage inventory, record sales, track customer debts, and monitor business performance — all from one simple system built for hardware shops.
+            </p>
+
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '56px' }}>
+              {/* <button
+                onClick={() => router.push('/dashboard')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  background: '#10b981', color: '#fff',
+                  border: 'none', borderRadius: '100px',
+                  padding: '16px 32px', fontSize: '15px', fontWeight: 700,
+                  cursor: 'pointer', transition: 'all .2s',
+                  boxShadow: '0 8px 32px rgba(16,185,129,0.4)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#059669'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                Get Started Free
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4-4 4M21 12H3"/></svg>
+              </button> */}
+              {/* <a
+                href="#features"
+                style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  border: '1.5px solid rgba(255,255,255,0.35)',
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: '100px', padding: '16px 32px',
+                  fontSize: '15px', fontWeight: 600, color: '#fff',
+                  textDecoration: 'none', transition: 'all .2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                See How It Works
+              </a> */}
+            </div>
+
+            {/* Trust row */}
+            <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap' }}>
+              {['No notebook needed', 'Works on any device', 'Designed for Kenya'].map(t => (
+                <span key={t} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+                  <svg width="16" height="16" fill="none" stroke="#34d399" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  {t}
+                </span>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-slate-50 py-20 px-6">
-        <div className="mx-auto max-w-4xl text-center space-y-6">
-          <p className="text-sm font-semibold uppercase tracking-widest text-emerald-600">The reality</p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Running a Hardware Store Is Hard Enough</h2>
-          <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-            Most hardware stores still rely on notebooks, memory, and manual calculations. This leads to errors, stock loss, and slow customer service.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-10 text-left">
+      {/* ── STATS BAR ── */}
+      <section style={{ background: '#065f46' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 48px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+          {stats.map((s, i) => (
+            <div key={s.label} style={{
+              padding: '32px 24px',
+              borderRight: i < stats.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none',
+              textAlign: 'center',
+            }}>
+              <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: '38px', fontWeight: 900, color: '#6ee7b7', lineHeight: 1 }}>{s.value}</p>
+              <p style={{ margin: '8px 0 0', fontSize: '13px', color: 'rgba(255,255,255,0.6)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── PROBLEM ── */}
+      <section style={{ background: '#0f172a', padding: '96px 48px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+            <p style={{ margin: '0 0 12px', fontSize: '12px', fontWeight: 700, color: '#f97316', letterSpacing: '0.2em', textTransform: 'uppercase' }}>The Reality</p>
+            <h2 style={{ fontFamily: "'Fraunces', serif", margin: 0, fontSize: 'clamp(28px, 3vw, 44px)', fontWeight: 900, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+              Running a Hardware Store Is Hard Enough
+            </h2>
+            <p style={{ margin: '16px auto 0', fontSize: '17px', color: '#94a3b8', maxWidth: '560px', lineHeight: 1.7 }}>
+              Most stores rely on memory, notebooks, and manual calculations. That leads to real money lost every day.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
             {[
-              { icon: '📦', pain: 'Missing stock', color: 'border-orange-500/30 bg-orange-500/5' },
-              { icon: '🧾', pain: 'Unrecorded sales', color: 'border-blue-500/30 bg-blue-500/5' },
-              { icon: '💸', pain: 'Forgotten debts', color: 'border-rose-500/30 bg-rose-500/5' },
-              { icon: '❓', pain: "Don't know actual profit", color: 'border-amber-500/30 bg-amber-500/5' },
-              { icon: '⏰', pain: 'Wasted time searching records', color: 'border-purple-500/30 bg-purple-500/5' },
-              { icon: '✅', pain: 'Our system solves all of this', color: 'border-green-500/30 bg-green-500/10 text-green-700' },
+              { icon: '📦', pain: 'Missing stock that no one noticed', color: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.25)' },
+              { icon: '🧾', pain: 'Sales recorded on scraps of paper', color: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.25)' },
+              { icon: '💸', pain: 'Customer debts that are forgotten', color: 'rgba(244,63,94,0.12)', border: 'rgba(244,63,94,0.25)' },
+              { icon: '❓', pain: "No idea what the actual profit is", color: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.25)' },
+              { icon: '⏰', pain: 'Wasted hours searching through records', color: 'rgba(168,85,247,0.12)', border: 'rgba(168,85,247,0.25)' },
+              { icon: '✅', pain: 'Our system fixes every one of these', color: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.4)', highlight: true },
             ].map((item, i) => (
-              <div key={i} className={`rounded-2xl border ${item.color} px-5 py-4 flex items-center gap-3`}>
-                <span className="text-2xl">{item.icon}</span>
-                <span className="text-sm font-medium text-slate-700">{item.pain}</span>
+              <div key={i} style={{
+                background: item.color, border: `1px solid ${item.border}`,
+                borderRadius: '16px', padding: '20px 22px',
+                display: 'flex', alignItems: 'center', gap: '14px',
+              }}>
+                <span style={{ fontSize: '24px', flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ fontSize: '14px', fontWeight: item.highlight ? 700 : 500, color: item.highlight ? '#6ee7b7' : '#cbd5e1', lineHeight: 1.5 }}>{item.pain}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="features" className="py-24 px-6 bg-white">
-        <div className="mx-auto max-w-6xl">
-          <div className="text-center mb-16 space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-widest text-orange-500">Features</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Everything You Need to Manage Your Store</h2>
+      {/* ── FEATURES ── */}
+      <section id="features" style={{ background: '#ffffff', padding: '96px 48px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <p style={{ margin: '0 0 12px', fontSize: '12px', fontWeight: 700, color: '#f97316', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Features</p>
+            <h2 style={{ fontFamily: "'Fraunces', serif", margin: 0, fontSize: 'clamp(28px, 3vw, 44px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
+              Everything You Need to Manage Your Store
+            </h2>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
             {features.map((f) => (
-              <div key={f.title} className={`rounded-3xl border ${f.border} ${f.bg} p-8 space-y-4 hover:-translate-y-1 transition-transform duration-200`}>
-                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${f.color} text-2xl shadow-sm`}>
+              <div key={f.title} style={{
+                background: f.bg, border: `1px solid ${f.border}`,
+                borderRadius: '24px', padding: '36px',
+                transition: 'transform .2s',
+                cursor: 'default',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-4px)')}
+              onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+              >
+                <div style={{
+                  width: '52px', height: '52px', borderRadius: '16px',
+                  background: f.accent, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: '24px', marginBottom: '20px',
+                }}>
                   {f.icon}
                 </div>
-                <div>
-                  <p className={`text-xs font-bold uppercase tracking-widest ${f.accent}`}>{f.title}</p>
-                  <h3 className="text-xl font-bold text-slate-900 mt-1">{f.subtitle}</h3>
-                  <p className="text-slate-600 mt-2 leading-relaxed">{f.description}</p>
-                </div>
+                <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 700, color: f.accent, letterSpacing: '0.18em', textTransform: 'uppercase' }}>{f.title}</p>
+                <h3 style={{ fontFamily: "'Fraunces', serif", margin: '0 0 12px', fontSize: '22px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>{f.subtitle}</h3>
+                <p style={{ margin: 0, fontSize: '15px', color: '#475569', lineHeight: 1.7 }}>{f.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-white py-20 px-6 lg:px-12">
-        <div className="mx-auto max-w-7xl space-y-24">
+      {/* ── WORKFLOW SECTIONS ── */}
+      <section style={{ background: '#f8fafc', padding: '96px 48px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '100px' }}>
           {sections.map((section, index) => (
-            <div key={section.title} className="grid gap-10 items-center lg:grid-cols-2">
-              <div className={`${index % 2 === 1 ? 'lg:order-2' : ''} space-y-6`}>
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600">
-                  {index === 0 ? 'Stock control' : index === 1 ? 'Sales recording' : 'Debt tracking'}
-                </p>
-                <h2 className="text-3xl font-bold text-slate-900">{section.title}</h2>
-                <p className="text-base leading-8 text-slate-600">{section.description}</p>
-                <ul className="space-y-3">
+            <div key={section.title} style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'center',
+            }}>
+              <div style={{ order: index % 2 === 1 ? 2 : 1 }}>
+                <p style={{ margin: '0 0 16px', fontSize: '12px', fontWeight: 700, color: '#059669', letterSpacing: '0.2em', textTransform: 'uppercase' }}>{section.tag}</p>
+                <h2 style={{ fontFamily: "'Fraunces', serif", margin: '0 0 20px', fontSize: 'clamp(26px, 2.5vw, 38px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.15 }}>{section.title}</h2>
+                <p style={{ margin: '0 0 28px', fontSize: '16px', color: '#475569', lineHeight: 1.8 }}>{section.description}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {section.bullets.map((bullet) => (
-                    <li key={bullet} className="flex gap-3 text-slate-700">
-                      <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-sm text-white">✓</span>
-                      <span>{bullet}</span>
-                    </li>
+                    <div key={bullet} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                      <div style={{
+                        width: '22px', height: '22px', borderRadius: '50%', background: '#065f46',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px',
+                      }}>
+                        <svg width="12" height="12" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      </div>
+                      <span style={{ fontSize: '15px', color: '#334155', fontWeight: 500, lineHeight: 1.6 }}>{bullet}</span>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
-              <div className={`${index % 2 === 1 ? 'lg:order-1' : ''} overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-50 shadow-xl`}>
-                <img src={section.image} alt={section.imageAlt} className="h-[420px] w-full object-cover" />
+              <div style={{ order: index % 2 === 1 ? 1 : 2 }}>
+                <div style={{ borderRadius: '24px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 24px 64px rgba(0,0,0,0.08)' }}>
+                  <img src={section.image} alt={section.imageAlt} style={{ width: '100%', height: '420px', objectFit: 'cover', display: 'block' }} />
+                </div>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="py-24 px-6 bg-white">
-        <div className="mx-auto max-w-6xl">
-          <div className="text-center mb-14 space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-widest text-emerald-600">Why stores choose us</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Why Hardware Stores Choose Our System</h2>
+      {/* ── BENEFITS ── */}
+      <section style={{ background: '#ffffff', padding: '96px 48px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <p style={{ margin: '0 0 12px', fontSize: '12px', fontWeight: 700, color: '#059669', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Why Stores Choose Us</p>
+            <h2 style={{ fontFamily: "'Fraunces', serif", margin: 0, fontSize: 'clamp(28px, 3vw, 44px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
+              Why Hardware Stores Choose Our System
+            </h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
             {benefits.map((b) => (
-              <div key={b.title} className="rounded-3xl border border-slate-200 p-7 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-white">
-                <span className="text-3xl">{b.icon}</span>
-                <h3 className="text-lg font-bold text-slate-900 mt-4">{b.title}</h3>
-                <p className="text-slate-600 text-sm mt-2 leading-relaxed">{b.desc}</p>
+              <div key={b.title} style={{
+                background: '#f8fafc', border: '1px solid #e2e8f0',
+                borderRadius: '20px', padding: '32px 28px',
+                transition: 'all .2s', cursor: 'default',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.08)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
+                <span style={{ fontSize: '32px', display: 'block', marginBottom: '16px' }}>{b.icon}</span>
+                <h3 style={{ margin: '0 0 10px', fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>{b.title}</h3>
+                <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: 1.7 }}>{b.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="how" className="py-24 px-6 bg-gradient-to-br from-orange-50 via-amber-50 to-white">
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center mb-14 space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-widest text-orange-500">Process</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Simple to Use</h2>
+      {/* ── EXTRA IMAGE STRIP ── */}
+      <section style={{ background: '#0f172a', padding: '0', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', height: '320px' }}>
+          {[
+            { src: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&auto=format&fit=crop', label: 'Inventory control' },
+            { src: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&auto=format&fit=crop', label: 'Store operations' },
+            { src: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop', label: 'Business reporting' },
+          ].map(img => (
+            <div key={img.label} style={{ position: 'relative', overflow: 'hidden' }}>
+              <img src={img.src} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .5s' }}
+                onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
+                onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+              />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)' }} />
+              <p style={{ position: 'absolute', bottom: '20px', left: '24px', margin: 0, fontSize: '14px', fontWeight: 600, color: '#fff', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{img.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section id="how-it-works" style={{ background: '#fff7ed', padding: '96px 48px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <p style={{ margin: '0 0 12px', fontSize: '12px', fontWeight: 700, color: '#f97316', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Process</p>
+            <h2 style={{ fontFamily: "'Fraunces', serif", margin: 0, fontSize: 'clamp(28px, 3vw, 44px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>Simple to Use</h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
             {steps.map((s, i) => (
-              <div key={s.number} className="relative bg-white rounded-3xl border border-orange-100 p-7 shadow-sm hover:shadow-md transition-shadow">
+              <div key={s.number} style={{ position: 'relative' }}>
                 {i < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-8 -right-3 text-orange-300 text-xl z-10">→</div>
+                  <div style={{ position: 'absolute', top: '28px', right: '-10px', zIndex: 1, color: '#fed7aa', fontSize: '20px', fontWeight: 700 }}>→</div>
                 )}
-                <span className="text-4xl font-black text-orange-200">{s.number}</span>
-                <h3 className="text-lg font-bold text-slate-900 mt-3">{s.label}</h3>
-                <p className="text-slate-600 text-sm mt-1 leading-relaxed">{s.desc}</p>
+                <div style={{ background: '#fff', border: '1px solid #fed7aa', borderRadius: '20px', padding: '32px 28px', height: '100%' }}>
+                  <p style={{ margin: '0 0 16px', fontFamily: "'Fraunces', serif", fontSize: '44px', fontWeight: 900, color: '#fed7aa', lineHeight: 1 }}>{s.number}</p>
+                  <h3 style={{ margin: '0 0 10px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{s.label}</h3>
+                  <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: 1.7 }}>{s.desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-20 px-6 bg-slate-100 text-center">
-        <div className="mx-auto max-w-2xl space-y-5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-5 py-2 text-sm text-emerald-700">
-            <span className="text-emerald-500 text-base">★★★★★</span>
-            Designed for hardware store teams
+      {/* ── TESTIMONIAL ── */}
+      <section style={{ background: '#065f46', padding: '96px 48px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '28px' }}>
+            {[...Array(5)].map((_, i) => (
+              <svg key={i} width="20" height="20" viewBox="0 0 24 24" fill="#fbbf24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+            ))}
           </div>
-          <blockquote className="text-2xl sm:text-3xl font-bold text-slate-900 leading-snug">
+          <blockquote style={{ fontFamily: "'Fraunces', serif", margin: '0 0 24px', fontSize: 'clamp(22px, 2.5vw, 34px)', fontWeight: 700, color: '#fff', lineHeight: 1.35, fontStyle: 'italic', letterSpacing: '-0.01em' }}>
             "Tracking stock is now much easier. We finally know exactly who owes us money."
           </blockquote>
-          <p className="text-slate-600 text-sm">— Hardware store owner, Nairobi</p>
+          <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.55)', fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>— Hardware store owner, Nairobi</p>
         </div>
       </section>
 
-      <section id="faq" className="py-24 px-6 bg-white">
-        <div className="mx-auto max-w-3xl">
-          <div className="text-center mb-12 space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-widest text-emerald-600">FAQ</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Common Questions</h2>
+      {/* ── FAQ ── */}
+      <section id="faq" style={{ background: '#ffffff', padding: '96px 48px' }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+            <p style={{ margin: '0 0 12px', fontSize: '12px', fontWeight: 700, color: '#059669', letterSpacing: '0.2em', textTransform: 'uppercase' }}>FAQ</p>
+            <h2 style={{ fontFamily: "'Fraunces', serif", margin: 0, fontSize: 'clamp(28px, 3vw, 44px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>Common Questions</h2>
           </div>
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {faqs.map((faq, i) => (
-              <div key={i} className="rounded-3xl border border-slate-200 overflow-hidden">
+              <div key={i} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', background: openFaq === i ? '#f8fafc' : '#fff', transition: 'background .2s' }}>
                 <button
-                  className="w-full flex items-center justify-between px-6 py-5 text-left font-semibold text-slate-900 hover:bg-slate-50 transition-colors"
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 >
-                  {faq.q}
-                  <span className={`text-slate-500 text-xl transition-transform duration-200 ${openFaq === i ? 'rotate-45' : ''}`}>+</span>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#0f172a' }}>{faq.q}</span>
+                  <span style={{ fontSize: '22px', color: '#94a3b8', transform: openFaq === i ? 'rotate(45deg)' : 'none', transition: 'transform .2s', flexShrink: 0, marginLeft: '16px' }}>+</span>
                 </button>
                 {openFaq === i && (
-                  <div className="px-6 pb-5 text-slate-600 text-sm leading-relaxed">{faq.a}</div>
+                  <div style={{ padding: '0 24px 20px', fontSize: '15px', color: '#64748b', lineHeight: 1.7 }}>{faq.a}</div>
                 )}
               </div>
             ))}
@@ -308,31 +493,38 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-24 px-6 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-500 text-white text-center">
-        <div className="mx-auto max-w-2xl space-y-7">
-          <h2 className="text-4xl sm:text-5xl font-extrabold leading-tight">Ready to Organize Your Hardware Store?</h2>
-          <p className="text-orange-100 text-lg max-w-lg mx-auto">Start managing inventory, sales, and customer debts from one central system.</p>
-          <div className="flex flex-wrap justify-center gap-4">
+      {/* ── FINAL CTA ── */}
+      <section style={{ position: 'relative', overflow: 'hidden', background: '#0f172a', padding: '60px 48px', textAlign: 'center' }}>
+        <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '320px', background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', maxWidth: '700px', margin: '0 auto' }}>
+          <p style={{ margin: '0 0 16px', fontSize: '12px', fontWeight: 700, color: '#34d399', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Get Started</p>
+          <h2 style={{ fontFamily: "'Fraunces', serif", margin: '0 0 20px', fontSize: 'clamp(32px, 4vw, 54px)', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            Ready to Organize Your Hardware Store?
+          </h2>
+          <p style={{ margin: '0 0 44px', fontSize: '18px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
+            Start managing inventory, sales, and customer debts from one central system.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
             <button
               onClick={() => router.push('/dashboard')}
-              className="inline-flex items-center gap-2 rounded-full bg-white text-orange-600 font-bold px-8 py-4 text-base shadow-xl shadow-orange-700/30 hover:bg-orange-50 transition-colors"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                background: '#10b981', color: '#fff', border: 'none',
+                borderRadius: '100px', padding: '18px 36px',
+                fontSize: '16px', fontWeight: 700, cursor: 'pointer',
+                boxShadow: '0 8px 32px rgba(16,185,129,0.35)', transition: 'all .2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#059669'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              Get Started Today
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-            </button>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="inline-flex items-center gap-2 rounded-full border-2 border-white/40 bg-white/5 text-white font-bold px-8 py-4 text-base hover:bg-white/10 transition-colors"
-            >
-              View store workflow
+              View Dashboard
             </button>
           </div>
+          <p style={{ margin: '28px 0 0', fontSize: '14px', color: 'rgba(255,255,255,0.65)', fontStyle: 'italic' }}>
+            powered by vico softwares -0791614036
+          </p>
         </div>
       </section>
-
-      <footer className="py-2 px-6 text-center">
-        <p className="text-xs text-slate-600">powered by <span className="italic">vico softwares</span></p>
-      </footer>
     </main>
   );
 }

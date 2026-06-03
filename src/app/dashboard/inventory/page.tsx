@@ -20,6 +20,16 @@ interface Product {
   purchasePrice: number;
 }
 
+const DEFAULT_CATEGORIES = [
+  'Tools',
+  'Electrical',
+  'Plumbing',
+  'Paint',
+  'Lumber',
+  'Hardware',
+  'Safety',
+];
+
 const CATEGORY_ICONS: Record<string, string> = {
   'Tools': '🔧',
   'Electrical': '⚡',
@@ -46,11 +56,16 @@ function StockBar({ current, min, max }: { current: number, min: number, max: nu
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'low' | 'out'>('all');
+  const [pendingNewCategory, setPendingNewCategory] = useState('');
   const [formData, setFormData] = useState({
+    id: '',
     name: '', category: '', sku: '',
     currentStock: 0, minStockLevel: 5, unitPrice: 0, purchasePrice: 0,
   });
@@ -68,23 +83,82 @@ export default function InventoryPage() {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/inventory', {
-        method: 'POST',
+      const url = isEditing ? '/api/inventory' : '/api/inventory';
+      const method = isEditing ? 'PUT' : 'POST';
+      
+      const payload = {
+        ...formData,
+        currentStock: parseInt(formData.currentStock as any),
+        minStockLevel: parseInt(formData.minStockLevel as any),
+        unitPrice: parseFloat(formData.unitPrice as any),
+        purchasePrice: parseFloat(formData.purchasePrice as any),
+      };
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          currentStock: parseInt(formData.currentStock as any),
-          minStockLevel: parseInt(formData.minStockLevel as any),
-          unitPrice: parseFloat(formData.unitPrice as any),
-          purchasePrice: parseFloat(formData.purchasePrice as any),
-        }),
+        body: JSON.stringify(payload),
       });
+
       if (res.ok) {
+        // Only add new category to list if product was saved successfully and it's a new category
+        if (pendingNewCategory && !categories.includes(pendingNewCategory)) {
+          setCategories(prevCategories => [...prevCategories, pendingNewCategory]);
+        }
         fetchProducts();
-        setShowModal(false);
-        setFormData({ name: '', category: '', sku: '', currentStock: 0, minStockLevel: 5, unitPrice: 0, purchasePrice: 0 });
+        handleCloseModal();
       }
     } catch (e) { console.error(e); }
+  };
+
+  const handleAddNewCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newCat = pendingNewCategory.trim();
+    if (!newCat || categories.includes(newCat)) {
+      return;
+    }
+
+    setFormData({ ...formData, category: newCat });
+    setShowNewCategoryModal(false);
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (e.target.value === 'NEW_CATEGORY') {
+      setShowNewCategoryModal(true);
+      return;
+    }
+
+    setFormData({ ...formData, category: e.target.value });
+    setPendingNewCategory('');
+  };
+
+  const handleOpenAddModal = () => {
+    setIsEditing(false);
+    setFormData({ id: '', name: '', category: '', sku: '', currentStock: 0, minStockLevel: 5, unitPrice: 0, purchasePrice: 0 });
+    setShowModal(true);
+  };
+
+  const handleOpenEditModal = (product: Product) => {
+    setIsEditing(true);
+    setFormData({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      sku: product.sku,
+      currentStock: product.currentStock,
+      minStockLevel: product.minStockLevel,
+      unitPrice: product.unitPrice,
+      purchasePrice: product.purchasePrice,
+    });
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setShowNewCategoryModal(false);
+    setIsEditing(false);
+    setPendingNewCategory('');
+    setFormData({ id: '', name: '', category: '', sku: '', currentStock: 0, minStockLevel: 5, unitPrice: 0, purchasePrice: 0 });
   };
 
   const getStockStatus = (current: number, min: number) => {
@@ -106,7 +180,7 @@ export default function InventoryPage() {
       <Header
         title="Inventory"
         subtitle="Manage your hardware store products"
-        action={<Button onClick={() => setShowModal(true)}>+ Add Product</Button>}
+        action={<Button onClick={handleOpenAddModal}>+ Add Product</Button>}
       />
 
       {/* Stats row */}
@@ -158,7 +232,7 @@ export default function InventoryPage() {
           <div className="text-center py-16">
             <div className="text-5xl mb-4">📦</div>
             <p className="text-gray-500 mb-4">{products.length === 0 ? 'No products yet' : 'No products match your filters'}</p>
-            {products.length === 0 && <Button onClick={() => setShowModal(true)}>Add Your First Product</Button>}
+            {products.length === 0 && <Button onClick={handleOpenAddModal}>Add Your First Product</Button>}
           </div>
         </Card>
       ) : (
@@ -178,7 +252,7 @@ export default function InventoryPage() {
               {filtered.map((product) => {
                 const status = getStockStatus(product.currentStock, product.minStockLevel);
                 return (
-                  <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
+                  <tr key={product.id} onClick={() => handleOpenEditModal(product)} className="border-b border-gray-50 hover:bg-blue-50/50 transition-colors cursor-pointer">
                     <td className="py-4 px-5">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-base flex-shrink-0">
@@ -216,11 +290,27 @@ export default function InventoryPage() {
       )}
 
       {showModal && (
-        <Modal title="Add New Product" onClose={() => setShowModal(false)} onSubmit={handleAddProduct}>
+        <Modal title={isEditing ? "Edit Product" : "Add New Product"} onClose={handleCloseModal} onSubmit={handleAddProduct}>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Input label="Product Name" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-              <Input label="Category" required value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} />
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1.5">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={formData.category}
+                  onChange={handleCategoryChange}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value="NEW_CATEGORY" className="font-semibold text-blue-600">+ New Category</option>
+                </select>
+              </div>
             </div>
             <Input label="SKU" required value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} />
             <div className="grid grid-cols-2 gap-4">
@@ -231,6 +321,24 @@ export default function InventoryPage() {
               <Input label="Current Stock" type="number" required value={formData.currentStock} onChange={e => setFormData({ ...formData, currentStock: e.target.value as any })} />
               <Input label="Minimum Stock Level" type="number" required value={formData.minStockLevel} onChange={e => setFormData({ ...formData, minStockLevel: e.target.value as any })} />
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {showNewCategoryModal && (
+        <Modal title="Add New Category" onClose={() => {
+            setShowNewCategoryModal(false);
+            setPendingNewCategory('');
+          }} onSubmit={handleAddNewCategory}>
+          <div className="space-y-4">
+            <Input 
+              label="Category Name" 
+              placeholder="e.g., Fasteners, Lighting, Plumbing Tools"
+              required 
+              value={pendingNewCategory} 
+              onChange={e => setPendingNewCategory(e.target.value)} 
+              autoFocus
+            />
           </div>
         </Modal>
       )}

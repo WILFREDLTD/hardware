@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 import { formatKES } from '@/lib/utils';
 
@@ -27,10 +29,18 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [checkingLock, setCheckingLock] = useState(true);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const router = useRouter();
   const now = new Date()
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening'
 
   useEffect(() => {
+    if (!authenticated) return;
+
     (async () => {
       try {
         const res = await fetch('/api/reports/stats')
@@ -39,7 +49,77 @@ export default function DashboardPage() {
       } catch (e: any) { setError(e.message) }
       finally { setLoading(false) }
     })()
+  }, [authenticated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const locked = window.localStorage.getItem('dashboardLocked') === 'true';
+    const session = window.sessionStorage.getItem('hardwareStoreSession');
+
+    if (locked || !session) {
+      setAuthenticated(false);
+      setShowPasswordModal(true);
+    } else {
+      setAuthenticated(true);
+    }
+    setCheckingLock(false);
   }, []);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === 'wilfred') {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('dashboardLocked', 'false');
+        window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
+        window.dispatchEvent(new Event('hardwareStoreSessionCreated'));
+      }
+      setPasswordError('');
+      setShowPasswordModal(false);
+      setAuthenticated(true);
+      setPassword('');
+    } else {
+      setPasswordError('Incorrect password');
+    }
+  };
+
+  const handlePasswordClose = () => {
+    setShowPasswordModal(false);
+    router.push('/');
+  };
+
+  if (checkingLock) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-gray-200 border-t-green-600 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Checking access…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!authenticated) {
+    return (
+      <>
+        {showPasswordModal && (
+          <Modal title="Enter Password" onClose={handlePasswordClose} onSubmit={handlePasswordSubmit} submitLabel="Unlock">
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">This dashboard is locked. Enter the password to continue.</p>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30"
+              />
+              {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+            </div>
+          </Modal>
+        )}
+      </>
+    )
+  }
 
   if (loading) {
     return (
