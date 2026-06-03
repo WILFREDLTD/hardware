@@ -62,6 +62,8 @@ CREATE TABLE "hardware"."sales" (
     "totalAmount" DOUBLE PRECISION NOT NULL,
     "paymentStatus" "hardware"."PaymentStatus" NOT NULL,
     "notes" TEXT,
+    "deletedAt" TIMESTAMP(3),
+    "deletionReason" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
