@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -53,14 +54,16 @@ model Product {
 
 // Inventory Transaction model - Track items in/out
 model InventoryTransaction {
-  id        String            @id @default(cuid())
-  productId String
-  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
-  type      TransactionType
-  quantity  Int
-  notes     String?
-  date      DateTime          @default(now())
-  createdAt DateTime          @default(now())
+  id         String            @id @default(cuid())
+  productId  String
+  product    Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type       TransactionType
+  quantity   Int
+  notes      String?
+  date       DateTime          @default(now())
+  syncStatus SyncStatus        @default(PENDING)
+  syncedAt   DateTime?
+  createdAt  DateTime          @default(now())
 
   @@index([productId])
   @@index([date])
@@ -84,6 +87,8 @@ model Sale {
   notes          String?
   deletedAt      DateTime?
   deletionReason String?
+  syncStatus     SyncStatus    @default(PENDING)
+  syncedAt       DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -135,6 +140,8 @@ model Debt {
   dueDate     DateTime?
   status      DebtStatus
   notes       String?
+  syncStatus  SyncStatus  @default(PENDING)
+  syncedAt    DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -158,13 +165,15 @@ enum DebtStatus {
 
 // Debt Payment model - Track payments received on debts
 model DebtPayment {
-  id        String   @id @default(cuid())
-  debtId    String
-  debt      Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
-  amount    Float
-  date      DateTime @default(now())
-  notes     String?
-  createdAt DateTime @default(now())
+  id         String     @id @default(cuid())
+  debtId     String
+  debt       Debt       @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  amount     Float
+  date       DateTime   @default(now())
+  notes      String?
+  syncStatus SyncStatus @default(PENDING)
+  syncedAt   DateTime?
+  createdAt  DateTime   @default(now())
 
   @@index([debtId])
   @@index([date])
@@ -189,6 +198,45 @@ model Report {
   @@index([type])
   @@index([period])
   @@map("reports")
+  @@schema("hardware")
+}
+
+model SyncEvent {
+  id         String         @id @default(cuid())
+  storeId    String
+  entityType SyncEntityType
+  entityId   String
+  eventType  String
+  payload    Json
+  status     SyncStatus      @default(PENDING)
+  lastError  String?
+  syncedAt   DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([status])
+  @@index([entityType, entityId])
+  @@map("sync_events")
+  @@schema("hardware")
+}
+
+enum SyncEntityType {
+  SALE
+  INVENTORY_TRANSACTION
+  DEBT
+  DEBT_PAYMENT
+  PRODUCT
+  CUSTOMER
+  RECEIPT
+
+  @@schema("hardware")
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+
   @@schema("hardware")
 }
 

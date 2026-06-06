@@ -67,12 +67,26 @@ export default function DebtsPage() {
 
   const handleAddDebt = async (e: React.FormEvent) => {
     e.preventDefault();
+    const phonePattern = /^[0-9]{10}$/;
+    if (!formData.debtorName.trim() || !phonePattern.test(formData.debtorPhone.trim())) {
+      alert('Please enter the debtor name and a valid 10-digit phone number.');
+      return;
+    }
+    if (!(formData.amount > 0)) {
+      alert('Please enter a positive amount.');
+      return;
+    }
+
     try {
       const res = await fetch('/api/debts', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, amount: parseFloat(formData.amount as any) }),
       });
       if (res.ok) { fetchDebts(); setShowModal(false); setFormData({ debtorName: '', debtorPhone: '', amount: 0 }); }
+      else {
+        const err = await res.json();
+        alert(err?.error || 'Failed to create debt');
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -241,7 +255,17 @@ export default function DebtsPage() {
         <Modal title="Add New Debt" onClose={() => setShowModal(false)} onSubmit={handleAddDebt}>
           <div className="space-y-4">
             <Input label="Debtor Name" required value={formData.debtorName} onChange={e => setFormData({ ...formData, debtorName: e.target.value })} />
-            <Input label="Phone Number" required value={formData.debtorPhone} onChange={e => setFormData({ ...formData, debtorPhone: e.target.value })} />
+            <Input
+              label="Phone Number"
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]{10}"
+              maxLength={10}
+              placeholder="07XXXXXXXX"
+              required
+              value={formData.debtorPhone}
+              onChange={e => setFormData({ ...formData, debtorPhone: e.target.value })}
+            />
             <Input label="Amount (KES)" type="number" step="0.01" required value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value as any })} />
           </div>
         </Modal>

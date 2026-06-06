@@ -1,0 +1,38 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: hardware_stocks
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  hardware-stocks:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/hardware_stocks
+      NEXTAUTH_URL: http://localhost:3001
+      NODE_ENV: development
+    ports:
+      - "3001:3000"
+    depends_on:
+      - postgres
+
+  sync-worker:
+    build: .
+    restart: unless-stopped
+    command: npm run sync-worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://postgres:password@postgres:5432/hardware_stocks
+      SYNC_INTERVAL_MS: ${SYNC_INTERVAL_MS:-300000}
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

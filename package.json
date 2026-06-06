@@ -3,15 +3,16 @@
   "version": "1.0.0",
   "description": "Professional hardware store inventory and sales management system",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p ${PORT:-3013}",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma migrate reset",
-    "prisma:seed": "ts-node -P tsconfig.prisma.json --transpile-only prisma/seed.ts"
+    "prisma:seed": "ts-node -P tsconfig.prisma.json --transpile-only prisma/seed.ts",
+    "sync-worker": "tsx scripts/sync-worker.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -30,11 +31,12 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "zod": "^4.4.3",
-    "@types/node": "^25.9.1",
     "@types/react": "19.2.16",
     "ts-node": "^10.9.2"
   },
   "devDependencies": {
-    "@prisma/internals": "^7.8.0"
+    "@prisma/internals": "^7.8.0",
+    "tsx": "^3.12.7",
+    "@types/node": "^25.9.1"
   }
 }

@@ -117,7 +117,7 @@ export default function SalesPage() {
   const [showDebtModal, setShowDebtModal] = React.useState(false)
   const [debtorNameInput, setDebtorNameInput] = React.useState('')
   const [debtorPhoneInput, setDebtorPhoneInput] = React.useState('')
-  const [pendingDebtPayload, setPendingDebtPayload] = React.useState<any | null>(null)
+  const [pendingDebtPayload, setPendingDebtPayload] = React.useState<{ body: any; remainingAmount: number } | null>(null)
   const [isProcessing, setIsProcessing] = React.useState(false)
   const [confirmDelete, setConfirmDelete] = React.useState(false)
   const [selectedSale, setSelectedSale] = React.useState<any | null>(null)
@@ -205,26 +205,21 @@ export default function SalesPage() {
       return
     }
 
-    // Partial payment: record remaining amount as debt
     const remaining = parseFloat((total - paid).toFixed(2))
-    // autosave sale with debt (no debtor details yet), then prompt for debtor info to update
-    const sale = await submitSale({
-      paymentMethod: 'CASH',
-      paidAmount: paid,
-      debtAmount: remaining,
-      paymentStatus: 'DEBT',
-      notes: `Partial payment KES ${paid.toFixed(2)}. Remaining KES ${remaining.toFixed(2)} recorded as debt.`,
+    setPendingDebtPayload({
+      body: {
+        paymentMethod: 'CASH',
+        paidAmount: paid,
+        debtAmount: remaining,
+        paymentStatus: 'DEBT',
+        notes: `Partial payment KES ${paid.toFixed(2)}. Remaining KES ${remaining.toFixed(2)} recorded as debt.`,
+      },
+      remainingAmount: remaining,
     })
-
-    if (sale?.debt?.id) {
-      setPendingDebtPayload({
-        debtId: sale.debt.id,
-        remainingAmount: sale.debt.amount - (sale.debt.amountPaid || 0),
-      })
-      setDebtorNameInput(sale.debt.debtorName || '')
-      setDebtorPhoneInput(sale.debt.debtorPhone || '')
-      setShowDebtModal(true)
-    }
+    setDebtorNameInput('')
+    setDebtorPhoneInput('')
+    setShowDebtModal(true)
+    return
   }
 
   async function handleMpesaSale() {
@@ -278,25 +273,21 @@ export default function SalesPage() {
         }
 
         const remaining = parseFloat((total - paid).toFixed(2))
-        // autosave sale with debt, then prompt for debtor details to update the debt
-        const sale = await submitSale({
-          paymentMethod: 'MPESA',
-          paidAmount: paid,
-          debtAmount: remaining,
-          paymentStatus: 'DEBT',
-          mobileNumber: mpesaNumber,
-          notes: `Partial M-Pesa payment KES ${paid.toFixed(2)}. Remaining KES ${remaining.toFixed(2)} recorded as debt.`,
+        setPendingDebtPayload({
+          body: {
+            paymentMethod: 'MPESA',
+            paidAmount: paid,
+            debtAmount: remaining,
+            paymentStatus: 'DEBT',
+            mobileNumber: mpesaNumber,
+            notes: `Partial M-Pesa payment KES ${paid.toFixed(2)}. Remaining KES ${remaining.toFixed(2)} recorded as debt.`,
+          },
+          remainingAmount: remaining,
         })
-
-        if (sale?.debt?.id) {
-          setPendingDebtPayload({
-            debtId: sale.debt.id,
-            remainingAmount: sale.debt.amount - (sale.debt.amountPaid || 0),
-          })
-          setDebtorNameInput(sale.debt.debtorName || '')
-          setDebtorPhoneInput(sale.debt.debtorPhone || '')
-          setShowDebtModal(true)
-        }
+        setDebtorNameInput('')
+        setDebtorPhoneInput('')
+        setShowDebtModal(true)
+        return
       }
     } catch (error: any) {
       setMpesaStatus(`M-Pesa request failed: ${error?.message || 'Unknown error'}`)
@@ -336,8 +327,13 @@ export default function SalesPage() {
     try {
       const payload: any = { paymentStatus: statusOption }
       if (statusOption === 'DEBT' && selectedSale.paymentStatus !== 'DEBT') {
-        payload.debtorName = debtorName
-        payload.debtorPhone = debtorPhone
+        if (!debtorName.trim() || !/^[0-9]{10}$/.test(debtorPhone.trim())) {
+          alert('Please enter the debtor name and a valid 10-digit phone number.');
+          setIsProcessing(false);
+          return;
+        }
+        payload.debtorName = debtorName.trim()
+        payload.debtorPhone = debtorPhone.trim()
       }
 
       const editedItems = editedSaleItems.map((item) => ({ id: item.id, quantity: item.quantity }))
@@ -766,6 +762,11 @@ export default function SalesPage() {
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Debtor phone</label>
                   <input
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    maxLength={10}
+                    placeholder="07XXXXXXXX"
                     value={debtorPhone}
                     onChange={(e) => setDebtorPhone(e.target.value)}
                     className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
@@ -827,20 +828,17 @@ export default function SalesPage() {
           }}
           onSubmit={async (e) => {
             e.preventDefault()
-            if (!pendingDebtPayload || !pendingDebtPayload.debtId) return
+            if (!pendingDebtPayload) return
+            if (!debtorNameInput.trim() || !/^[0-9]{10}$/.test(debtorPhoneInput.trim())) {
+              alert('Please enter the debtor name and a valid 10-digit phone number.')
+              return
+            }
             try {
-              const res = await fetch(`/api/debts/${pendingDebtPayload.debtId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ debtorName: debtorNameInput, debtorPhone: debtorPhoneInput }),
+              await submitSale({
+                ...pendingDebtPayload.body,
+                debtorName: debtorNameInput.trim(),
+                debtorPhone: debtorPhoneInput.trim(),
               })
-              if (res.ok) {
-                // refresh sales/debts view
-                refreshSales()
-              } else {
-                const err = await res.json()
-                console.error('Failed to update debt:', err)
-              }
             } catch (err) {
               console.error(err)
             } finally {
@@ -849,6 +847,7 @@ export default function SalesPage() {
             }
           }}
           submitLabel="Record debt"
+          submitDisabled={!debtorNameInput.trim() || !/^[0-9]{10}$/.test(debtorPhoneInput.trim())}
           overlayClassName="fixed inset-0 z-40 bg-black/40"
         >
           <div className="space-y-4 text-sm text-gray-700">
@@ -871,6 +870,10 @@ export default function SalesPage() {
               <input
                 value={debtorPhoneInput}
                 onChange={(e) => setDebtorPhoneInput(e.target.value)}
+                inputMode="numeric"
+                pattern="[0-9]{10}"
+                maxLength={10}
+                placeholder="07XXXXXXXX"
                 className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               />
             </div>

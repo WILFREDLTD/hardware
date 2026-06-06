@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createSyncEvent } from "@/lib/sync";
 import { z } from "zod";
+
+const phonePattern = /^[0-9]{10}$/;
 
 const saleSchema = z.object({
   items: z.array(
@@ -17,7 +20,10 @@ const saleSchema = z.object({
   mobileNumber: z.string().optional(),
   notes: z.string().optional(),
   debtorName: z.string().optional(),
-  debtorPhone: z.string().optional(),
+  debtorPhone: z.string().optional().refine(
+    (value) => value === undefined || phonePattern.test(value),
+    { message: 'Debtor phone must be exactly 10 digits' }
+  ),
   saleDate: z.string().datetime().optional(),
 });
 
@@ -98,8 +104,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create debt if payment status is DEBT
+    // Validate debt contact info when the sale is marked as debt
     if (paymentStatus === "DEBT") {
+      if (!debtorName?.trim() || !debtorPhone?.trim()) {
+        return NextResponse.json(
+          { error: 'Debtor name and phone are required for debt sales' },
+          { status: 400 }
+        );
+      }
+
+      if (!phonePattern.test(debtorPhone)) {
+        return NextResponse.json(
+          { error: 'Debtor phone must be exactly 10 digits' },
+          { status: 400 }
+        );
+      }
+
       const paid = typeof paidAmount === 'number' ? paidAmount : 0
       const debtStatus = paid > 0 ? 'PARTIAL' : 'PENDING'
 
@@ -147,10 +167,15 @@ export async function POST(request: NextRequest) {
             type: "OUT",
             quantity: item.quantity,
             notes: `Sale: ${sale.id}`,
+            syncStatus: "PENDING",
           },
         });
       }
     }
+
+    await createSyncEvent("SALE", sale.id, "CREATE", {
+      sale,
+    });
 
     return NextResponse.json(sale, { status: 201 });
   } catch (error: any) {

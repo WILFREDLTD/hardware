@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createSyncEvent } from "@/lib/sync";
 import { z } from "zod";
 
 const debtSchema = z.object({
   debtorName: z.string().min(1),
-  debtorPhone: z.string().min(1),
+  debtorPhone: z.string().regex(/^[0-9]{10}$/, 'Debtor phone must be exactly 10 digits'),
   amount: z.number().positive(),
   dueDate: z.string().datetime().optional(),
   notes: z.string().optional(),
@@ -44,7 +45,12 @@ export async function POST(request: NextRequest) {
         dueDate: dueDate ? new Date(dueDate) : undefined,
         status: "PENDING",
         notes,
+        syncStatus: "PENDING",
       },
+    });
+
+    await createSyncEvent("DEBT", debt.id, "CREATE", {
+      debt,
     });
 
     return NextResponse.json(debt, { status: 201 });

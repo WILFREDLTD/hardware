@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createSyncEvent } from "@/lib/sync";
 import { z } from "zod";
 
 const paymentSchema = z.object({
@@ -49,6 +50,7 @@ export async function POST(
         debtId: params.id,
         amount,
         notes,
+        syncStatus: "PENDING",
       },
     });
 
@@ -66,7 +68,15 @@ export async function POST(
       data: {
         amountPaid: newAmountPaid,
         status: newStatus as any,
+        syncStatus: "PENDING",
       },
+    });
+
+    await createSyncEvent("DEBT_PAYMENT", payment.id, "CREATE", {
+      payment,
+    });
+    await createSyncEvent("DEBT", updatedDebt.id, "UPDATE", {
+      debt: updatedDebt,
     });
 
     return NextResponse.json(

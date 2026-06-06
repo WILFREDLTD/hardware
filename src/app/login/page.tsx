@@ -21,7 +21,7 @@ export default function LoginPage() {
     if (formData.email && formData.password) {
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
-        window.localStorage.setItem('dashboardLocked', 'false');
+        window.localStorage.setItem('appLocked', 'false');
       }
       setTimeout(() => {
         router.push('/dashboard');
