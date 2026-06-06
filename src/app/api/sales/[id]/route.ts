@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createSyncEvent } from "@/lib/sync";
 import { z } from "zod";
+
+const phonePattern = /^[0-9]{10}$/;
 
 const saleUpdateSchema = z.object({
   paymentStatus: z.enum(["PAID", "DEBT"]).optional(),
   debtorName: z.string().optional(),
-  debtorPhone: z.string().optional(),
+  debtorPhone: z.string().optional().refine(
+    (value) => value === undefined || phonePattern.test(value),
+    { message: 'Debtor phone must be exactly 10 digits' }
+  ),
   items: z
     .array(
       z.object({
@@ -143,6 +149,7 @@ export async function PATCH(
 
       if (itemsChanged) {
         saleUpdateData.totalAmount = updatedTotal;
+        saleUpdateData.syncStatus = "PENDING";
         if (sale.debt) {
           transactionOperations.push(
             prisma.debt.update({
@@ -159,6 +166,7 @@ export async function PATCH(
 
     if (paymentStatus && paymentStatus !== sale.paymentStatus) {
       saleUpdateData.paymentStatus = paymentStatus;
+      saleUpdateData.syncStatus = "PENDING";
 
       if (sale.paymentStatus === "DEBT" && paymentStatus === "PAID") {
         if (sale.debt) {
@@ -174,6 +182,13 @@ export async function PATCH(
           );
         }
       } else if (sale.paymentStatus === "PAID" && paymentStatus === "DEBT") {
+        if (debtorPhone && !phonePattern.test(debtorPhone)) {
+          return NextResponse.json(
+            { error: 'Debtor phone must be exactly 10 digits' },
+            { status: 400 }
+          );
+        }
+
         if (sale.debt) {
           // Keep the existing debt record in sync with the sale.
           transactionOperations.push(
@@ -222,6 +237,12 @@ export async function PATCH(
 
     const results = await prisma.$transaction(transactionOperations);
     const updatedSale = Array.isArray(results) ? results[0] : results;
+
+    await createSyncEvent("SALE", id, "UPDATE", {
+      changes: body,
+      sale: updatedSale,
+    });
+
     return NextResponse.json(updatedSale);
   } catch (error: any) {
     console.error("/api/sales/[id] PATCH error:", error);
@@ -296,6 +317,10 @@ export async function DELETE(
     }
 
     await prisma.$transaction(tx);
+
+    await createSyncEvent("SALE", id, "DELETE", {
+      deletionReason,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

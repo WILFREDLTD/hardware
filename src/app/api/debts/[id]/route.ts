@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const updateSchema = z.object({
   debtorName: z.string().optional(),
-  debtorPhone: z.string().optional(),
+  debtorPhone: z.string().regex(/^[0-9]{10}$/, 'Debtor phone must be exactly 10 digits').optional(),
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {

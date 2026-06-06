@@ -28,6 +28,7 @@ const quickActions = [
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
@@ -35,6 +36,11 @@ export default function DashboardPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [syncState, setSyncState] = useState<{
+    phase: 'idle' | 'running' | 'done' | 'error';
+    progress: number;
+    message: string;
+  }>({ phase: 'idle', progress: 0, message: 'Ready to sync your offline changes.' });
   const router = useRouter();
   const now = new Date()
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening'
@@ -42,20 +48,36 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!authenticated) return;
 
-    (async () => {
+    const loadDashboard = async () => {
       try {
-        const res = await fetch('/api/reports/stats')
-        if (!res.ok) throw new Error('Failed to fetch stats')
-        setStats(await res.json())
-      } catch (e: any) { setError(e.message) }
-      finally { setLoading(false) }
-    })()
+        const [statsRes, syncRes] = await Promise.all([
+          fetch('/api/reports/stats'),
+          fetch('/api/sync/manual'),
+        ]);
+
+        if (!statsRes.ok) throw new Error('Failed to fetch stats');
+        if (!syncRes.ok) throw new Error('Failed to fetch sync status');
+
+        setStats(await statsRes.json());
+        const statusBody = await syncRes.json();
+        setPendingSyncCount(statusBody.pending ?? 0);
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+
+    const interval = window.setInterval(loadDashboard, 30000);
+    return () => window.clearInterval(interval);
   }, [authenticated]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const locked = window.localStorage.getItem('dashboardLocked') === 'true';
+    const locked = window.localStorage.getItem('appLocked') === 'true';
     const session = window.sessionStorage.getItem('hardwareStoreSession');
 
     if (locked || !session) {
@@ -67,11 +89,52 @@ export default function DashboardPage() {
     setCheckingLock(false);
   }, []);
 
+  useEffect(() => {
+    if (syncState.phase !== 'running') return;
+
+    const start = Date.now();
+    const id = window.setInterval(() => {
+      setSyncState((current) => {
+        if (current.phase !== 'running') return current;
+        const elapsed = Date.now() - start;
+        const next = Math.min(92, current.progress + Math.round(elapsed / 500));
+        return { ...current, progress: Math.max(current.progress, next) };
+      });
+    }, 150);
+
+    return () => window.clearInterval(id);
+  }, [syncState.phase]);
+
+  const handleManualSync = async () => {
+    setSyncState({ phase: 'running', progress: 10, message: 'Almost there — syncing your latest offline changes...' });
+
+    try {
+      const res = await fetch('/api/sync/manual', { method: 'POST' });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Manual sync failed');
+      }
+
+      const result = await res.json();
+      setSyncState({
+        phase: 'done',
+        progress: 100,
+        message: result.message || `Sync complete: ${result.synced} synced, ${result.failed} failed.`,
+      });
+    } catch (error: any) {
+      setSyncState({
+        phase: 'error',
+        progress: 100,
+        message: error?.message || 'Manual sync failed.',
+      });
+    }
+  };
+
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === '123456') {
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem('dashboardLocked', 'false');
+        window.localStorage.setItem('appLocked', 'false');
         window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
         window.dispatchEvent(new Event('hardwareStoreSessionCreated'));
       }
@@ -238,6 +301,44 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="mt-6 bg-white rounded-xl border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">Manual Sync</p>
+            <p className="text-xs text-gray-500">Push pending offline events to the cloud now.</p>
+          </div>
+          <Button onClick={handleManualSync} disabled={syncState.phase === 'running'}>
+            {syncState.phase === 'running' ? 'Syncing...' : 'Run Sync'}
+          </Button>
+        </div>
+
+        <div className="rounded-full bg-gray-100 h-3 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              syncState.phase === 'error'
+                ? 'bg-red-500'
+                : pendingSyncCount === 0
+                ? 'bg-green-500'
+                : 'bg-amber-500'
+            }`}
+            style={{ width: `${syncState.phase === 'running' ? syncState.progress : Math.min(100, Math.max(0, pendingSyncCount * 5))}%` }}
+          />
+        </div>
+
+        <div className="mt-3 flex items-center justify-between text-sm">
+          <span className={`font-medium ${syncState.phase === 'error' ? 'text-red-600' : 'text-gray-700'}`}>
+            {syncState.phase === 'running'
+              ? 'Almost there — syncing your latest offline changes...'
+              : pendingSyncCount === 0
+              ? 'All items are synced.'
+              : `${pendingSyncCount} item${pendingSyncCount === 1 ? '' : 's'} pending sync`}
+          </span>
+          <span className="text-gray-400">
+            {syncState.phase === 'running' ? `${syncState.progress}%` : `${pendingSyncCount} pending`}
+          </span>
         </div>
       </div>
 

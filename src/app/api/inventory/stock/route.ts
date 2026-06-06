@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createSyncEvent } from "@/lib/sync";
 import { z } from "zod";
 
 const stockTransactionSchema = z.object({
@@ -169,12 +170,17 @@ export async function POST(request: NextRequest) {
         quantity: unitQuantity,
         notes,
         date: date ? new Date(date) : new Date(),
+        syncStatus: "PENDING",
       },
     });
 
     await prisma.product.update({
       where: { id: productId },
       data: { currentStock: newStock },
+    });
+
+    await createSyncEvent("INVENTORY_TRANSACTION", transaction.id, "CREATE", {
+      transaction,
     });
 
     return NextResponse.json(transaction, { status: 201 });

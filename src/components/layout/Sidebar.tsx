@@ -72,7 +72,7 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
   const handleLock = () => {
     if (typeof window !== 'undefined') {
       window.sessionStorage.clear();
-      window.localStorage.setItem('dashboardLocked', 'true');
+      window.localStorage.setItem('appLocked', 'true');
     }
     router.push('/');
   };

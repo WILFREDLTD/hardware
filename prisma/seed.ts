@@ -5,6 +5,14 @@ function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
+function randomSyncData() {
+  const status = Math.random() < 0.5 ? 'PENDING' : 'SYNCED'
+  return {
+    syncStatus: status,
+    syncedAt: status === 'SYNCED' ? new Date(Date.now() - randInt(0, 7) * 24 * 60 * 60 * 1000) : null,
+  }
+}
+
 const BASE_UNIT_MAP: Record<string, string> = {
   Plumbing: 'meter',
   Electrical: 'pcs',
@@ -23,8 +31,22 @@ function getPackageConversion(category: string, baseUnit: string) {
   return { packageUnitLabel: undefined, packageSize: undefined };
 }
 
+async function clearSeedData() {
+  await prisma.syncEvent.deleteMany()
+  await prisma.debtPayment.deleteMany()
+  await prisma.debt.deleteMany()
+  await prisma.saleItem.deleteMany()
+  await prisma.sale.deleteMany()
+  await prisma.inventoryTransaction.deleteMany()
+  await prisma.product.deleteMany()
+  await prisma.hardware.deleteMany()
+  await prisma.hardwareList.deleteMany()
+}
+
 async function main() {
   console.log('Seeding database (TypeScript)...')
+
+  await clearSeedData()
 
   // Create 20 sample Products with realistic Kenyan hardware names
   const productDefinitions = [
@@ -148,6 +170,7 @@ async function main() {
         type: 'IN',
         quantity: randInt(5, 50),
         notes: 'Initial seed stock',
+        ...randomSyncData(),
       },
     })
     txCount++
@@ -160,6 +183,7 @@ async function main() {
       data: {
         totalAmount: 0,
         paymentStatus: s % 3 === 0 ? 'DEBT' : 'PAID',
+        ...randomSyncData(),
       },
     })
 

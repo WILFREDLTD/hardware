@@ -104,10 +104,48 @@ npm run prisma:migrate
 
 5. Start the development server
 ```bash
-npm run dev
+PORT=3000 npm run dev
 ```
 
+By default the local server uses port `3000` if `PORT` is not set.
+
 Visit http://localhost:3000 to access the application.
+
+### Docker Compose (Recommended for Local Development)
+
+The easiest way to run the app with a local Postgres database is using Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+This will:
+- Start a Postgres database on port 5432 (internal to compose network)
+- Build and start the Next.js app on port 3001
+- Automatically wait for the database, apply migrations, and seed (if empty)
+
+Access the app at http://localhost:3001
+
+### Docker (Standalone Container)
+
+If you want to run the image as a standalone container, you must provide a `DATABASE_URL` pointing to an external Postgres database:
+
+```bash
+docker run -p 3000:3000 \
+  -e DATABASE_URL='postgresql://user:password@db-host:5432/hardware_stocks' \
+  -e NEXTAUTH_URL='http://localhost:3000' \
+  wilfredcrypto/vico_softwares:hardware_stocks
+```
+
+For example, with a local Postgres on the host machine:
+```bash
+docker run -p 3000:3000 \
+  -e DATABASE_URL='postgresql://user:password@host.docker.internal:5432/hardware_stocks' \
+  -e NEXTAUTH_URL='http://localhost:3000' \
+  wilfredcrypto/vico_softwares:hardware_stocks
+```
+
+Note: The container runtime automatically waits for the database, applies Prisma migrations, and seeds data when the database is empty.
 
 ## Available Scripts
 
@@ -167,9 +205,33 @@ See [SYSTEM_ARCHITECTURE.md](docs/architecture/SYSTEM_ARCHITECTURE.md) for compl
 
 ### Docker Deployment
 
+This project now includes a local offline-first deployment configuration with a sync worker.
+
+```bash
+docker compose up --build
+```
+
+The compose stack includes:
+- `postgres` — local PostgreSQL database container storing the local shop database in a Docker volume
+- `backend` — Next.js frontend/backend monolith serving the UI and API on port 3000
+- `sync-worker` — periodic sync worker that pushes pending events to the configured cloud sync API
+
+If you want to run the app as a single container instead of compose:
+
 ```bash
 docker build -t hardware-store .
 docker run -p 3000:3000 --env-file .env.local hardware-store
+```
+
+### Sync Configuration
+
+Add these environment variables to your `.env.local` or `.env` file:
+
+```env
+STORE_ID="HW001"
+SYNC_API_URL="https://cloud.example.com/api"
+SYNC_TOKEN="your-sync-token"
+SYNC_INTERVAL_MS="300000"
 ```
 
 ### Vercel Deployment
