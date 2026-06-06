@@ -1,6 +1,8 @@
 'use client';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { usePathname } from 'next/navigation';
+import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const SESSION_KEY = 'hardwareStoreSession';
@@ -30,10 +32,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    setLocked(window.localStorage.getItem(LOCK_KEY) === 'true');
 
     let timeoutId: number | null = null;
 
@@ -47,6 +54,7 @@ export default function DashboardLayout({
     const lockApp = () => {
       window.sessionStorage.clear();
       window.localStorage.setItem(LOCK_KEY, 'true');
+      window.dispatchEvent(new Event('dashboardLockActivated'));
       clearTimer();
     };
 
@@ -85,6 +93,16 @@ export default function DashboardLayout({
       }
     };
 
+    const handleLockActivated = () => {
+      setLocked(true);
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === LOCK_KEY) {
+        setLocked(event.newValue === 'true');
+      }
+    };
+
     if (checkSession()) {
       startInactivityTimer();
     }
@@ -94,13 +112,37 @@ export default function DashboardLayout({
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart'];
     events.forEach((event) => window.addEventListener(event, handleActivity));
     window.addEventListener(SESSION_CREATED_EVENT, handleSessionCreated);
+    window.addEventListener('dashboardLockActivated', handleLockActivated);
+    window.addEventListener('storage', handleStorage);
 
     return () => {
       clearTimer();
       events.forEach((event) => window.removeEventListener(event, handleActivity));
       window.removeEventListener(SESSION_CREATED_EVENT, handleSessionCreated);
+      window.removeEventListener('dashboardLockActivated', handleLockActivated);
+      window.removeEventListener('storage', handleStorage);
     };
   }, []);
+
+  const handleUnlockSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === '123456') {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(LOCK_KEY, 'false');
+        window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ lastActivity: Date.now() }));
+        window.dispatchEvent(new Event(SESSION_CREATED_EVENT));
+      }
+      setPasswordError('');
+      setPassword('');
+      setLocked(false);
+      return;
+    }
+    setPasswordError('Incorrect password');
+  };
+
+  const handleUnlockCancel = () => {
+    router.push('/');
+  };
 
   if (!ready) {
     return (
@@ -118,6 +160,23 @@ export default function DashboardLayout({
           {children}
         </div>
       </main>
+      {locked && (
+        <Modal title="Unlock Dashboard" onClose={handleUnlockCancel} onSubmit={handleUnlockSubmit} submitLabel="Unlock">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">The dashboard is locked. Enter the password to continue.</p>
+            <Input
+              label="Password"
+              type="password"
+              required
+              placeholder="123456"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <p className="text-sm text-gray-500">Password is <strong>123456</strong> for this demo test.</p>
+            {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

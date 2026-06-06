@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 import { formatKES } from '@/lib/utils';
@@ -20,7 +18,7 @@ interface DashboardStats {
 }
 
 const quickActions = [
-  { label: 'Record Sale', href: '/dashboard/sales', icon: '🧾', color: '#1a6b45', desc: 'Add a new transaction' },
+  { label: 'Configure Auto-lock', action: 'configureAutoLock', icon: '⏱️', color: '#1a6b45', desc: 'Set idle timeout before lock' },
   { label: 'Add Product', href: '/dashboard/inventory', icon: '📦', color: '#2563eb', desc: 'Update your stock' },
   { label: 'Record Payment', href: '/dashboard/debts', icon: '💳', color: '#7c3aed', desc: 'Log debt repayment' },
 ]
@@ -30,17 +28,16 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [checkingLock, setCheckingLock] = useState(true);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const router = useRouter();
+  const [showAutoLockModal, setShowAutoLockModal] = useState(false);
+  const [autoLockMinutes, setAutoLockMinutes] = useState('1');
   const now = new Date()
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening'
 
   useEffect(() => {
-    if (!authenticated) return;
+    const current = typeof window !== 'undefined' ? window.localStorage.getItem('autoLockUptimeMinutes') : null;
+    if (current && /^[0-9]+$/.test(current)) {
+      setAutoLockMinutes(current);
+    }
 
     (async () => {
       try {
@@ -50,79 +47,7 @@ export default function DashboardPage() {
       } catch (e: any) { setError(e.message) }
       finally { setLoading(false) }
     })()
-  }, [authenticated]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const locked = window.localStorage.getItem('dashboardLocked') === 'true';
-    const session = window.sessionStorage.getItem('hardwareStoreSession');
-
-    if (locked || !session) {
-      setAuthenticated(false);
-      setShowPasswordModal(true);
-    } else {
-      setAuthenticated(true);
-    }
-    setCheckingLock(false);
   }, []);
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === '123456') {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('dashboardLocked', 'false');
-        window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
-        window.dispatchEvent(new Event('hardwareStoreSessionCreated'));
-      }
-      setPasswordError('');
-      setShowPasswordModal(false);
-      setAuthenticated(true);
-      setPassword('');
-    } else {
-      setPasswordError('Incorrect password');
-    }
-  };
-
-  const handlePasswordClose = () => {
-    setShowPasswordModal(false);
-    router.push('/');
-  };
-
-  if (checkingLock) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-gray-200 border-t-green-600 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Checking access…</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!authenticated) {
-    return (
-      <>
-        {showPasswordModal && (
-          <Modal title="Enter Password" onClose={handlePasswordClose} onSubmit={handlePasswordSubmit} submitLabel="Unlock">
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">This dashboard is locked. Enter the password to continue.</p>
-              <Input
-                label="Password"
-                type="password"
-                required
-                placeholder="123456"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-              />
-              <p className="text-sm text-gray-500">Password is <strong>123456</strong> for this demo test.</p>
-              {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
-            </div>
-          </Modal>
-        )}
-      </>
-    )
-  }
 
   if (loading) {
     return (
@@ -223,8 +148,8 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl border border-gray-100 p-5">
           <div className="text-sm font-semibold text-gray-700 mb-4">Quick Actions</div>
           <div className="space-y-3">
-            {quickActions.map(a => (
-              <Link key={a.label} href={a.href}>
+            {quickActions.map((a) => {
+              const content = (
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group">
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm flex-shrink-0" style={{ backgroundColor: a.color }}>
                     {a.icon}
@@ -235,8 +160,27 @@ export default function DashboardPage() {
                   </div>
                   <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </div>
-              </Link>
-            ))}
+              );
+
+              if (a.action === 'configureAutoLock') {
+                return (
+                  <button
+                    key={a.label}
+                    type="button"
+                    onClick={() => setShowAutoLockModal(true)}
+                    className="w-full text-left"
+                  >
+                    {content}
+                  </button>
+                );
+              }
+
+              return (
+                <Link key={a.label} href={a.href || '#'}>
+                  {content}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -255,6 +199,32 @@ export default function DashboardPage() {
             </button>
           </Link>
         </div>
+      )}
+      {showAutoLockModal && (
+        <Modal title="Configure Auto-lock" onClose={() => setShowAutoLockModal(false)} onSubmit={(e) => {
+          e.preventDefault();
+          const minutes = parseInt(autoLockMinutes, 10);
+          if (isNaN(minutes) || minutes < 1) {
+            return;
+          }
+          window.localStorage.setItem('autoLockUptimeMinutes', String(minutes));
+          window.dispatchEvent(new Event('autoLockConfigChanged'));
+          setShowAutoLockModal(false);
+        }} submitLabel="Save">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">Set how long the app can stay idle before the dashboard auto-locks.</p>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Auto-lock timeout (minutes)</label>
+              <input
+                type="number"
+                min="1"
+                value={autoLockMinutes}
+                onChange={(e) => setAutoLockMinutes(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )

@@ -54,7 +54,7 @@ export async function PATCH(
 
     if (items?.length) {
       for (const itemUpdate of items) {
-        const currentItem = sale.saleItems.find((item) => item.id === itemUpdate.id);
+        const currentItem = sale.saleItems.find((item: { id: string }) => item.id === itemUpdate.id);
         if (!currentItem) {
           return NextResponse.json({ error: "Sale item not found" }, { status: 400 });
         }

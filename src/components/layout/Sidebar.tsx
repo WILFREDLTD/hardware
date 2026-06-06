@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 interface NavItem {
   href: string;
@@ -39,7 +38,6 @@ const navigationSections: NavSection[] = [
 ];
 
 export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
-  const router = useRouter();
   const [inventoryCount, setInventoryCount] = useState<number | null>(null);
   const [debtsCount, setDebtsCount] = useState<number | null>(null);
 
@@ -67,15 +65,16 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
     };
 
     fetchCounts();
-  }, []);
 
-  const handleLock = () => {
-    if (typeof window !== 'undefined') {
-      window.sessionStorage.clear();
-      window.localStorage.setItem('dashboardLocked', 'true');
-    }
-    router.push('/');
-  };
+    const handleDebtsUpdated = () => {
+      fetchCounts();
+    };
+
+    window.addEventListener('debtsUpdated', handleDebtsUpdated);
+    return () => {
+      window.removeEventListener('debtsUpdated', handleDebtsUpdated);
+    };
+  }, []);
 
   return (
     <aside
@@ -182,18 +181,22 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
         ))}
       </nav>
 
-      {pathname.startsWith('/dashboard') && (
-        <div className="px-3 pb-3 pt-3 border-t border-emerald-900">
-          <button
-            type="button"
-            onClick={handleLock}
-            className="w-full rounded-lg bg-white px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition"
-            style={{ color: '#111827' }}
-          >
-            Lock
-          </button>
-        </div>
-      )}
+      <div className="px-3 pb-3 pt-3 border-t border-emerald-900">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              window.sessionStorage.clear();
+              window.localStorage.setItem('dashboardLocked', 'true');
+              window.dispatchEvent(new Event('dashboardLockActivated'));
+            }
+          }}
+          className="w-full rounded-lg bg-white px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition"
+          style={{ color: '#111827' }}
+        >
+          Lock
+        </button>
+      </div>
 
       {/* Footer */}
       <div className="px-3 pb-4 pt-3 border-t border-emerald-900">

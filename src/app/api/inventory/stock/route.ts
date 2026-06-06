@@ -66,7 +66,7 @@ export async function DELETE(request: NextRequest) {
       take: 3,
     });
 
-    const isRecent = recentTransactions.some((item) => item.id === transactionId);
+    const isRecent = recentTransactions.some((item: { id: string }) => item.id === transactionId);
     if (!isRecent) {
       return NextResponse.json(
         { error: 'Only the last three transactions may be reverted' },

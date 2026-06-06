@@ -67,12 +67,29 @@ export default function DebtsPage() {
 
   const handleAddDebt = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.debtorName.trim()) {
+      alert('Debtor name is required.')
+      return
+    }
+    if (!/^[0-9]{10}$/.test(formData.debtorPhone.trim())) {
+      alert('Debtor phone must be exactly 10 digits.')
+      return
+    }
     try {
       const res = await fetch('/api/debts', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, amount: parseFloat(formData.amount as any) }),
       });
-      if (res.ok) { fetchDebts(); setShowModal(false); setFormData({ debtorName: '', debtorPhone: '', amount: 0 }); }
+      if (res.ok) {
+        fetchDebts();
+        window.dispatchEvent(new Event('debtsUpdated'));
+        setShowModal(false);
+        setFormData({ debtorName: '', debtorPhone: '', amount: 0 });
+      }
+      else {
+        const error = await res.json()
+        alert(error?.error || 'Failed to add debt')
+      }
     } catch (e) { console.error(e); }
   };
 

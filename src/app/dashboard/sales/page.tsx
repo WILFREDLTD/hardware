@@ -117,7 +117,8 @@ export default function SalesPage() {
   const [showDebtModal, setShowDebtModal] = React.useState(false)
   const [debtorNameInput, setDebtorNameInput] = React.useState('')
   const [debtorPhoneInput, setDebtorPhoneInput] = React.useState('')
-  const [pendingDebtPayload, setPendingDebtPayload] = React.useState<any | null>(null)
+  const [pendingSalePayload, setPendingSalePayload] = React.useState<any | null>(null)
+  const [debtModalError, setDebtModalError] = React.useState('')
   const [isProcessing, setIsProcessing] = React.useState(false)
   const [confirmDelete, setConfirmDelete] = React.useState(false)
   const [selectedSale, setSelectedSale] = React.useState<any | null>(null)
@@ -182,6 +183,9 @@ export default function SalesPage() {
         fetch('/api/reports/stats').then(r => r.json()).then(s => setIncome(s.totalRevenue || 0))
         fetch('/api/inventory').then(r => r.json()).then(d => setProducts(d))
         refreshSales()
+        if (body.paymentStatus === 'DEBT' || data?.debt) {
+          window.dispatchEvent(new Event('debtsUpdated'))
+        }
         return data
       } else {
         const e = await res.json()
@@ -205,26 +209,18 @@ export default function SalesPage() {
       return
     }
 
-    // Partial payment: record remaining amount as debt
     const remaining = parseFloat((total - paid).toFixed(2))
-    // autosave sale with debt (no debtor details yet), then prompt for debtor info to update
-    const sale = await submitSale({
+    setPendingSalePayload({
       paymentMethod: 'CASH',
       paidAmount: paid,
       debtAmount: remaining,
       paymentStatus: 'DEBT',
       notes: `Partial payment KES ${paid.toFixed(2)}. Remaining KES ${remaining.toFixed(2)} recorded as debt.`,
     })
-
-    if (sale?.debt?.id) {
-      setPendingDebtPayload({
-        debtId: sale.debt.id,
-        remainingAmount: sale.debt.amount - (sale.debt.amountPaid || 0),
-      })
-      setDebtorNameInput(sale.debt.debtorName || '')
-      setDebtorPhoneInput(sale.debt.debtorPhone || '')
-      setShowDebtModal(true)
-    }
+    setDebtorNameInput('')
+    setDebtorPhoneInput('')
+    setDebtModalError('')
+    setShowDebtModal(true)
   }
 
   async function handleMpesaSale() {
@@ -279,7 +275,7 @@ export default function SalesPage() {
 
         const remaining = parseFloat((total - paid).toFixed(2))
         // autosave sale with debt, then prompt for debtor details to update the debt
-        const sale = await submitSale({
+        setPendingSalePayload({
           paymentMethod: 'MPESA',
           paidAmount: paid,
           debtAmount: remaining,
@@ -287,16 +283,10 @@ export default function SalesPage() {
           mobileNumber: mpesaNumber,
           notes: `Partial M-Pesa payment KES ${paid.toFixed(2)}. Remaining KES ${remaining.toFixed(2)} recorded as debt.`,
         })
-
-        if (sale?.debt?.id) {
-          setPendingDebtPayload({
-            debtId: sale.debt.id,
-            remainingAmount: sale.debt.amount - (sale.debt.amountPaid || 0),
-          })
-          setDebtorNameInput(sale.debt.debtorName || '')
-          setDebtorPhoneInput(sale.debt.debtorPhone || '')
-          setShowDebtModal(true)
-        }
+        setDebtorNameInput('')
+        setDebtorPhoneInput('')
+        setDebtModalError('')
+        setShowDebtModal(true)
       }
     } catch (error: any) {
       setMpesaStatus(`M-Pesa request failed: ${error?.message || 'Unknown error'}`)
@@ -336,8 +326,16 @@ export default function SalesPage() {
     try {
       const payload: any = { paymentStatus: statusOption }
       if (statusOption === 'DEBT' && selectedSale.paymentStatus !== 'DEBT') {
-        payload.debtorName = debtorName
-        payload.debtorPhone = debtorPhone
+        if (!debtorName.trim()) {
+          alert('Debtor name is required to mark this sale as debt.')
+          return
+        }
+        if (!/^[0-9]{10}$/.test(debtorPhone.trim())) {
+          alert('Debtor phone must be exactly 10 digits.')
+          return
+        }
+        payload.debtorName = debtorName.trim()
+        payload.debtorPhone = debtorPhone.trim()
       }
 
       const editedItems = editedSaleItems.map((item) => ({ id: item.id, quantity: item.quantity }))
@@ -818,35 +816,38 @@ export default function SalesPage() {
       )}
 
       <Toast open={toastOpen} onClose={() => setToastOpen(false)} title="Sale recorded" description="Sale successfully recorded and stock updated." />
-      {showDebtModal && pendingDebtPayload && (
+      {showDebtModal && pendingSalePayload && (
         <Modal
           title="Record debtor details"
           onClose={() => {
             setShowDebtModal(false)
-            setPendingDebtPayload(null)
+            setPendingSalePayload(null)
+            setDebtModalError('')
           }}
           onSubmit={async (e) => {
             e.preventDefault()
-            if (!pendingDebtPayload || !pendingDebtPayload.debtId) return
-            try {
-              const res = await fetch(`/api/debts/${pendingDebtPayload.debtId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ debtorName: debtorNameInput, debtorPhone: debtorPhoneInput }),
-              })
-              if (res.ok) {
-                // refresh sales/debts view
-                refreshSales()
-              } else {
-                const err = await res.json()
-                console.error('Failed to update debt:', err)
-              }
-            } catch (err) {
-              console.error(err)
-            } finally {
-              setShowDebtModal(false)
-              setPendingDebtPayload(null)
+            if (!pendingSalePayload) return
+            if (!debtorNameInput.trim()) {
+              setDebtModalError('Debtor name is required.')
+              return
             }
+            if (!/^[0-9]{10}$/.test(debtorPhoneInput.trim())) {
+              setDebtModalError('Debtor phone must be exactly 10 digits.')
+              return
+            }
+
+            const payload = {
+              ...pendingSalePayload,
+              debtorName: debtorNameInput.trim(),
+              debtorPhone: debtorPhoneInput.trim(),
+            }
+
+            setShowDebtModal(false)
+            setPendingSalePayload(null)
+            setDebtModalError('')
+            setDebtorNameInput('')
+            setDebtorPhoneInput('')
+            await submitSale(payload)
           }}
           submitLabel="Record debt"
           overlayClassName="fixed inset-0 z-40 bg-black/40"
@@ -854,7 +855,7 @@ export default function SalesPage() {
           <div className="space-y-4 text-sm text-gray-700">
             <div>
               <div className="font-medium text-gray-900">Remaining debt</div>
-              <div className="text-lg font-semibold">KES {formatKES(pendingDebtPayload.remainingAmount || 0)}</div>
+              <div className="text-lg font-semibold">KES {formatKES(pendingSalePayload.debtAmount || 0)}</div>
             </div>
 
             <div>
@@ -869,10 +870,12 @@ export default function SalesPage() {
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Debtor phone</label>
               <input
+                type="tel"
                 value={debtorPhoneInput}
                 onChange={(e) => setDebtorPhoneInput(e.target.value)}
                 className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
               />
+              {debtModalError && <p className="mt-2 text-xs text-red-600">{debtModalError}</p>}
             </div>
           </div>
         </Modal>
