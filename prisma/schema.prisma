@@ -31,12 +31,15 @@ model Product {
   name          String
   category      String
   sku           String   @unique
-  currentStock  Int      @default(0)
-  minStockLevel Int      @default(5)
-  unitPrice     Float
-  purchasePrice Float
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  currentStock      Int      @default(0)
+  minStockLevel     Int      @default(5)
+  baseUnit          String   @default("pcs")
+  packageUnitLabel  String?
+  packageSize       Int?
+  unitPrice         Float
+  purchasePrice     Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
   saleItems     SaleItem[]

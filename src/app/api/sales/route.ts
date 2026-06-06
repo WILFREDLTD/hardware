@@ -12,7 +12,8 @@ const saleSchema = z.object({
   ),
   paymentStatus: z.enum(["PAID", "DEBT"]),
   paymentMethod: z.enum(["CASH", "MPESA"]).optional(),
-  paidAmount: z.number().positive().optional(),
+  paidAmount: z.number().nonnegative().optional(),
+  debtAmount: z.number().nonnegative().optional(),
   mobileNumber: z.string().optional(),
   notes: z.string().optional(),
   debtorName: z.string().optional(),
@@ -37,6 +38,7 @@ export async function GET() {
     });
     return NextResponse.json(sales);
   } catch (error) {
+    console.error("/api/sales GET error:", error);
     return NextResponse.json(
       { error: "Failed to fetch sales" },
       { status: 500 }
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
     const totalAmount = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 
     // Create sale
-    const sale = await prisma.sale.create({
+    let sale = await prisma.sale.create({
       data: {
         saleDate: saleDate ? new Date(saleDate) : new Date(),
         totalAmount,
@@ -97,16 +99,33 @@ export async function POST(request: NextRequest) {
     });
 
     // Create debt if payment status is DEBT
-    if (paymentStatus === "DEBT" && debtorName && debtorPhone) {
+    if (paymentStatus === "DEBT") {
+      const paid = typeof paidAmount === 'number' ? paidAmount : 0
+      const debtStatus = paid > 0 ? 'PARTIAL' : 'PENDING'
+
       await prisma.debt.create({
         data: {
           saleId: sale.id,
-          debtorName,
-          debtorPhone,
+          debtorName: debtorName ?? '',
+          debtorPhone: debtorPhone ?? '',
           amount: totalAmount,
-          status: "PENDING",
+          amountPaid: paid,
+          status: debtStatus,
+          notes: notes,
         },
       });
+
+      // fetch sale with debt included so caller receives debt id
+      const saleWithDebt = await prisma.sale.findUnique({
+        where: { id: sale.id },
+        include: { saleItems: true, debt: true },
+      });
+
+      if (saleWithDebt) {
+        // replace sale variable for return
+        // @ts-ignore
+        sale = saleWithDebt
+      }
     }
 
     // Update product stock
@@ -135,6 +154,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(sale, { status: 201 });
   } catch (error: any) {
+    console.error("/api/sales POST error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input", details: error.issues },

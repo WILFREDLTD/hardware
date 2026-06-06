@@ -24,6 +24,7 @@ const navigationSections: NavSection[] = [
   {
     label: 'Manage',
     items: [
+      { href: '/dashboard/products', label: 'Products' },
       { href: '/dashboard/inventory', label: 'Inventory' },
       { href: '/dashboard/sales', label: 'Sales' },
       { href: '/dashboard/debts', label: 'Debts' },

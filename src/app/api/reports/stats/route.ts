@@ -56,6 +56,7 @@ export async function GET() {
       lowStockProducts: lowStockItems,
     });
   } catch (error) {
+    console.error("/api/reports/stats GET error:", error);
     return NextResponse.json(
       { error: "Failed to fetch statistics" },
       { status: 500 }

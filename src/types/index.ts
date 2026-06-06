@@ -7,6 +7,9 @@ export interface Product {
   sku: string;
   currentStock: number;
   minStockLevel: number;
+  baseUnit: string;
+  packageUnitLabel?: string;
+  packageSize?: number;
   unitPrice: number;
   purchasePrice: number;
   createdAt: Date;

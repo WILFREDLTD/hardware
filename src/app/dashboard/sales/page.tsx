@@ -112,6 +112,12 @@ export default function SalesPage() {
   const [cashPaid, setCashPaid] = React.useState('')
   const [mpesaNumber, setMpesaNumber] = React.useState('')
   const [mpesaStatus, setMpesaStatus] = React.useState<string | null>(null)
+  const [mpesaMode, setMpesaMode] = React.useState<'FULL' | 'PARTIAL'>('FULL')
+  const [mpesaPaid, setMpesaPaid] = React.useState('')
+  const [showDebtModal, setShowDebtModal] = React.useState(false)
+  const [debtorNameInput, setDebtorNameInput] = React.useState('')
+  const [debtorPhoneInput, setDebtorPhoneInput] = React.useState('')
+  const [pendingDebtPayload, setPendingDebtPayload] = React.useState<any | null>(null)
   const [isProcessing, setIsProcessing] = React.useState(false)
   const [confirmDelete, setConfirmDelete] = React.useState(false)
   const [selectedSale, setSelectedSale] = React.useState<any | null>(null)
@@ -162,10 +168,12 @@ export default function SalesPage() {
     setIsProcessing(true)
     try {
       const items = cart.map(c => ({ productId: c.productId, quantity: c.quantity, unitPrice: c.unitPrice }))
-      const body = { items, paymentStatus: 'PAID', ...payload }
+      const paymentStatus = payload?.paymentStatus || 'PAID'
+      const body = { items, paymentStatus, ...payload }
       const res = await fetch('/api/sales', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 
       if (res.ok) {
+        const data = await res.json()
         setToastOpen(true)
         setCart([])
         setCashPaid('')
@@ -174,6 +182,7 @@ export default function SalesPage() {
         fetch('/api/reports/stats').then(r => r.json()).then(s => setIncome(s.totalRevenue || 0))
         fetch('/api/inventory').then(r => r.json()).then(d => setProducts(d))
         refreshSales()
+        return data
       } else {
         const e = await res.json()
         alert(e?.error || 'Failed to record sale')
@@ -189,11 +198,33 @@ export default function SalesPage() {
 
   async function handleCashSale() {
     const paid = parseFloat(cashPaid) || 0
-    if (paid < total) {
-      alert('Enter an amount paid that is equal or greater than the order total.')
+    if (cart.length === 0) return
+
+    if (paid >= total) {
+      await submitSale({ paymentMethod: 'CASH', paidAmount: paid, notes: `Cash payment, paid amount KES ${paid.toFixed(2)}` })
       return
     }
-    await submitSale({ paymentMethod: 'CASH', paidAmount: paid, notes: `Cash payment, paid amount KES ${paid.toFixed(2)}` })
+
+    // Partial payment: record remaining amount as debt
+    const remaining = parseFloat((total - paid).toFixed(2))
+    // autosave sale with debt (no debtor details yet), then prompt for debtor info to update
+    const sale = await submitSale({
+      paymentMethod: 'CASH',
+      paidAmount: paid,
+      debtAmount: remaining,
+      paymentStatus: 'DEBT',
+      notes: `Partial payment KES ${paid.toFixed(2)}. Remaining KES ${remaining.toFixed(2)} recorded as debt.`,
+    })
+
+    if (sale?.debt?.id) {
+      setPendingDebtPayload({
+        debtId: sale.debt.id,
+        remainingAmount: sale.debt.amount - (sale.debt.amountPaid || 0),
+      })
+      setDebtorNameInput(sale.debt.debtorName || '')
+      setDebtorPhoneInput(sale.debt.debtorPhone || '')
+      setShowDebtModal(true)
+    }
   }
 
   async function handleMpesaSale() {
@@ -204,32 +235,69 @@ export default function SalesPage() {
     if (total <= 0) return
 
     setIsProcessing(true)
-    setMpesaStatus('Sending M-Pesa push...')
 
     try {
-      const res = await fetch('https://payment-gateway.kimaniwilfred95.workers.dev/api/stk/push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      if (mpesaMode === 'FULL') {
+        setMpesaStatus('Sending M-Pesa push...')
+        const res = await fetch('https://payment-gateway.kimaniwilfred95.workers.dev/api/stk/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mobileNumber: mpesaNumber,
+            amount: Math.round(total),
+            accountReference: 'HardwareSale',
+            transactionDesc: 'Hardware store sale',
+          }),
+        })
+
+        const data = await res.json()
+        if (!res.ok) {
+          setMpesaStatus(`M-Pesa push failed: ${data?.error || res.statusText}`)
+          return
+        }
+
+        setMpesaStatus('M-Pesa push initiated. Confirm payment on the customer phone.')
+        await submitSale({
+          paymentMethod: 'MPESA',
           mobileNumber: mpesaNumber,
-          amount: Math.round(total),
-          accountReference: 'HardwareSale',
-          transactionDesc: 'Hardware store sale',
-        }),
-      })
+          paidAmount: Math.round(total),
+          notes: `M-Pesa push to ${mpesaNumber}`,
+        })
+      } else {
+        // Partial payment via M-Pesa: don't push, just record paid amount and debt
+        const paid = parseFloat(mpesaPaid) || 0
+        if (paid <= 0) {
+          alert('Enter a partial amount received via M-Pesa.')
+          return
+        }
 
-      const data = await res.json()
-      if (!res.ok) {
-        setMpesaStatus(`M-Pesa push failed: ${data?.error || res.statusText}`)
-        return
+        if (paid >= total) {
+          // treat as full
+          await submitSale({ paymentMethod: 'MPESA', paidAmount: paid, mobileNumber: mpesaNumber, notes: `M-Pesa partial (treated as full) ${mpesaNumber}` })
+          return
+        }
+
+        const remaining = parseFloat((total - paid).toFixed(2))
+        // autosave sale with debt, then prompt for debtor details to update the debt
+        const sale = await submitSale({
+          paymentMethod: 'MPESA',
+          paidAmount: paid,
+          debtAmount: remaining,
+          paymentStatus: 'DEBT',
+          mobileNumber: mpesaNumber,
+          notes: `Partial M-Pesa payment KES ${paid.toFixed(2)}. Remaining KES ${remaining.toFixed(2)} recorded as debt.`,
+        })
+
+        if (sale?.debt?.id) {
+          setPendingDebtPayload({
+            debtId: sale.debt.id,
+            remainingAmount: sale.debt.amount - (sale.debt.amountPaid || 0),
+          })
+          setDebtorNameInput(sale.debt.debtorName || '')
+          setDebtorPhoneInput(sale.debt.debtorPhone || '')
+          setShowDebtModal(true)
+        }
       }
-
-      setMpesaStatus('M-Pesa push initiated. Confirm payment on the customer phone.')
-      await submitSale({
-        paymentMethod: 'MPESA',
-        mobileNumber: mpesaNumber,
-        notes: `M-Pesa push to ${mpesaNumber}`,
-      })
     } catch (error: any) {
       setMpesaStatus(`M-Pesa request failed: ${error?.message || 'Unknown error'}`)
     } finally {
@@ -335,6 +403,8 @@ export default function SalesPage() {
   }
 
   const total = cart.reduce((s, it) => s + it.unitPrice * it.quantity, 0)
+  const paidValue = parseFloat(cashPaid) || 0
+  const changeValue = paidValue - total
   const displayedSales = Array.isArray(sales) ? sales : []
   const editedSaleTotal = editedSaleItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
   const recentSales = displayedSales.slice(0, 10)
@@ -435,7 +505,7 @@ export default function SalesPage() {
                           key={method}
                           type="button"
                           onClick={() => setPaymentMethod(method)}
-                          className={`py-3 rounded-xl text-sm font-semibold transition ${paymentMethod === method ? 'bg-emerald-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                          className={`py-3 rounded-xl text-sm font-semibold transition ${paymentMethod === method ? 'bg-emerald-500 text-white' : 'bg-gray-400 text-white hover:bg-gray-500'}`}
                         >
                           {method}
                         </button>
@@ -459,21 +529,60 @@ export default function SalesPage() {
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500">
                         <span>Change</span>
-                        <span className="font-semibold text-gray-900">KES {formatKES(Math.max(0, (parseFloat(cashPaid) || 0) - total))}</span>
+                        <span className={`font-semibold ${changeValue < 0 ? 'text-red-600' : 'text-gray-900'}`}>KES {formatKES(changeValue)}</span>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">M-Pesa mobile number</label>
-                        <input
-                          type="tel"
-                          value={mpesaNumber}
-                          onChange={(e) => setMpesaNumber(e.target.value)}
-                          placeholder="07XXXXXXXX"
-                          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                        />
+                        <div className="text-xs font-medium text-gray-700 mb-2">Payment option</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(['FULL', 'PARTIAL'] as const).map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => setMpesaMode(m)}
+                              className={`py-3 rounded-xl text-sm font-semibold transition ${mpesaMode === m ? 'bg-emerald-300 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                            >
+                              {m === 'FULL' ? 'Full pay' : 'Partial'}
+                            </button>
+                          ))}
+                        </div>
                       </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">M-Pesa mobile number</label>
+                          <input
+                            type="tel"
+                            value={mpesaNumber}
+                            onChange={(e) => setMpesaNumber(e.target.value)}
+                            placeholder="07XXXXXXXX"
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          {mpesaMode === 'PARTIAL' ? (
+                            <>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Amount paid (KES)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={mpesaPaid}
+                                onChange={(e) => setMpesaPaid(e.target.value)}
+                                placeholder="KES 0.00"
+                                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                              />
+                              <div className="mt-2 text-xs text-gray-500">Remaining automatically recorded as debt after submission.</div>
+                            </>
+                          ) : (
+                            <div className="flex items-center h-full text-sm text-gray-500">Full payment will be requested via STK push.</div>
+                          )}
+                        </div>
+                      </div>
+
                       {mpesaStatus && <div className="text-xs text-gray-500">{mpesaStatus}</div>}
                     </div>
                   )}
@@ -490,7 +599,7 @@ export default function SalesPage() {
                         className="px-6 py-3 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                         style={{ backgroundColor: '#1a6b45' }}
                       >
-                        Record cash sale →
+                        {changeValue < 0 ? 'Record sale as debt →' : 'Record cash sale →'}
                       </button>
                     ) : (
                       <button
@@ -709,6 +818,65 @@ export default function SalesPage() {
       )}
 
       <Toast open={toastOpen} onClose={() => setToastOpen(false)} title="Sale recorded" description="Sale successfully recorded and stock updated." />
+      {showDebtModal && pendingDebtPayload && (
+        <Modal
+          title="Record debtor details"
+          onClose={() => {
+            setShowDebtModal(false)
+            setPendingDebtPayload(null)
+          }}
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (!pendingDebtPayload || !pendingDebtPayload.debtId) return
+            try {
+              const res = await fetch(`/api/debts/${pendingDebtPayload.debtId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ debtorName: debtorNameInput, debtorPhone: debtorPhoneInput }),
+              })
+              if (res.ok) {
+                // refresh sales/debts view
+                refreshSales()
+              } else {
+                const err = await res.json()
+                console.error('Failed to update debt:', err)
+              }
+            } catch (err) {
+              console.error(err)
+            } finally {
+              setShowDebtModal(false)
+              setPendingDebtPayload(null)
+            }
+          }}
+          submitLabel="Record debt"
+          overlayClassName="fixed inset-0 z-40 bg-black/40"
+        >
+          <div className="space-y-4 text-sm text-gray-700">
+            <div>
+              <div className="font-medium text-gray-900">Remaining debt</div>
+              <div className="text-lg font-semibold">KES {formatKES(pendingDebtPayload.remainingAmount || 0)}</div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Debtor name</label>
+              <input
+                value={debtorNameInput}
+                onChange={(e) => setDebtorNameInput(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Debtor phone</label>
+              <input
+                value={debtorPhoneInput}
+                onChange={(e) => setDebtorPhoneInput(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

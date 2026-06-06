@@ -224,6 +224,7 @@ export async function PATCH(
     const updatedSale = Array.isArray(results) ? results[0] : results;
     return NextResponse.json(updatedSale);
   } catch (error: any) {
+    console.error("/api/sales/[id] PATCH error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input", details: error.issues },
@@ -298,6 +299,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error("/api/sales/[id] DELETE error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input", details: error.issues },

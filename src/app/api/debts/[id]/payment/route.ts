@@ -74,6 +74,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error: any) {
+    console.error("/api/debts/[id]/payment POST error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input", details: error.issues },

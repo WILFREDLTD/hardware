@@ -5,6 +5,24 @@ function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
+const BASE_UNIT_MAP: Record<string, string> = {
+  Plumbing: 'meter',
+  Electrical: 'pcs',
+  Paint: 'liter',
+  Tools: 'pcs',
+  Masonry: 'kg',
+  Building: 'kg',
+  Safety: 'pcs',
+}
+
+function getPackageConversion(category: string, baseUnit: string) {
+  if (baseUnit === 'kg') return { packageUnitLabel: 'bag', packageSize: 50 };
+  if (baseUnit === 'liter') return { packageUnitLabel: 'can', packageSize: 5 };
+  if (baseUnit === 'meter') return { packageUnitLabel: 'roll', packageSize: 10 };
+  if (baseUnit === 'pcs') return { packageUnitLabel: 'box', packageSize: 20 };
+  return { packageUnitLabel: undefined, packageSize: undefined };
+}
+
 async function main() {
   console.log('Seeding database (TypeScript)...')
 
@@ -37,6 +55,8 @@ async function main() {
     const def = productDefinitions[i]
     const unitPrice = randInt(250, 15000)
     const purchasePrice = parseFloat((unitPrice * (0.5 + Math.random() * 0.35)).toFixed(2))
+    const baseUnit = BASE_UNIT_MAP[def.category] || 'pcs'
+    const packageInfo = getPackageConversion(def.category, baseUnit)
     const p = await prisma.product.create({
       data: {
         name: def.name,
@@ -44,6 +64,9 @@ async function main() {
         sku: `${def.skuBase}-${i + 1}`,
         currentStock: randInt(10, 200),
         minStockLevel: randInt(5, 15),
+        baseUnit,
+        packageUnitLabel: packageInfo.packageUnitLabel,
+        packageSize: packageInfo.packageSize,
         unitPrice,
         purchasePrice,
       },
