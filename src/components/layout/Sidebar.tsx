@@ -206,7 +206,7 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
             />
           </div>
           <p className="text-center text-[10px] uppercase tracking-[0.18em] text-emerald-200" style={{ lineHeight: 1.3 }}>
-            Scan for consultant.
+            Scan for Consultation.
           </p>
         </div>
       </div>
