@@ -102,6 +102,15 @@ const stats = [
 export default function Home() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const LOCK_KEY = 'dashboardLocked';
+
+  const openDashboard = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.clear();
+      window.localStorage.setItem(LOCK_KEY, 'true');
+    }
+    router.push('/dashboard');
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -160,7 +169,7 @@ export default function Home() {
             >{link}</a>
           ))}
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={openDashboard}
             style={{
               background: '#065f46', color: '#fff',
               border: 'none', borderRadius: '100px',
@@ -506,7 +515,7 @@ export default function Home() {
           </p>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={openDashboard}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '8px',
                 background: '#10b981', color: '#fff', border: 'none',

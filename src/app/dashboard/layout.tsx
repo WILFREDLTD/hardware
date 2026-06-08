@@ -63,9 +63,11 @@ export default function DashboardLayout({
     const checkSession = () => {
       const session = getSession();
       if (isLocked()) {
+        lockApp();
         return false;
       }
       if (!session) {
+        lockApp();
         return false;
       }
       if (Date.now() - session.lastActivity > INACTIVITY_TIMEOUT) {

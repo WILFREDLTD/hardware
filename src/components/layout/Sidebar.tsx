@@ -196,6 +196,19 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
         >
           Lock
         </button>
+
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <div className="w-full rounded-2xl bg-emerald-900/40 p-3 border border-emerald-800" style={{ maxWidth: '140px' }}>
+            <img
+              src="/vicotechQR.png"
+              alt="Dashboard access QR code"
+              style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '14px' }}
+            />
+          </div>
+          <p className="text-center text-[10px] uppercase tracking-[0.18em] text-emerald-200" style={{ lineHeight: 1.3 }}>
+            Scan for consultant.
+          </p>
+        </div>
       </div>
 
       {/* Footer */}
