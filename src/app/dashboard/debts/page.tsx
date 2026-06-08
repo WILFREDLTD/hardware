@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import Toast from '@/components/ui/Toast';
 import { formatKES } from '@/lib/utils';
 
 interface Debt {
@@ -55,6 +56,13 @@ export default function DebtsPage() {
   const [search, setSearch] = useState('');
   const [formData, setFormData] = useState({ debtorName: '', debtorPhone: '', amount: 0 });
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'MPESA'>('CASH');
+  const [mpesaNumber, setMpesaNumber] = useState('');
+  const [mpesaStatus, setMpesaStatus] = useState<string | null>(null);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastTitle, setToastTitle] = useState('');
+  const [toastDescription, setToastDescription] = useState<string | undefined>(undefined);
+  const [toastVariant, setToastVariant] = useState<'success' | 'error'>('success');
 
   useEffect(() => { fetchDebts(); }, []);
 
@@ -93,16 +101,88 @@ export default function DebtsPage() {
     } catch (e) { console.error(e); }
   };
 
+  const showToast = (variant: 'success' | 'error', title: string, description?: string) => {
+    setToastVariant(variant);
+    setToastTitle(title);
+    setToastDescription(description);
+    setToastOpen(true);
+  };
+
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDebt) return;
+
+    const amount = parseFloat(paymentAmount);
+    if (!amount || amount <= 0) {
+      showToast('error', 'Invalid amount', 'Enter a valid payment amount.');
+      return;
+    }
+
+    const remaining = selectedDebt.amount - selectedDebt.amountPaid;
+    if (amount > remaining) {
+      showToast('error', 'Amount too large', 'Payment cannot exceed remaining debt.');
+      return;
+    }
+
     try {
+      if (paymentMethod === 'MPESA') {
+        if (!mpesaNumber.match(/^\d{10}$/)) {
+          showToast('error', 'Invalid M-Pesa number', 'Enter a 10-digit mobile number.');
+          return;
+        }
+
+        setMpesaStatus('Sending M-Pesa prompt...');
+        const pushRes = await fetch('https://payment-gateway.kimaniwilfred95.workers.dev/api/stk/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mobileNumber: mpesaNumber,
+            amount: Math.round(amount),
+            accountReference: 'DebtRepay',
+            transactionDesc: `Debt repayment for ${selectedDebt.debtorName}`,
+          }),
+        });
+
+        const pushData = await pushRes.json();
+        if (!pushRes.ok) {
+          showToast('error', 'M-Pesa failed', pushData?.error || 'Unable to send prompt.');
+          setMpesaStatus(`M-Pesa push failed: ${pushData?.error || pushRes.statusText}`);
+          return;
+        }
+
+        setMpesaStatus('M-Pesa prompt sent. Confirm payment on the customer phone.');
+      }
+
       const res = await fetch(`/api/debts/${selectedDebt.id}/payment`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: parseFloat(paymentAmount) }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          paymentMethod,
+          mobileNumber: paymentMethod === 'MPESA' ? mpesaNumber : undefined,
+          notes: paymentMethod === 'MPESA'
+            ? `Debt repayment via M-Pesa to ${mpesaNumber}`
+            : 'Debt repayment via cash',
+        }),
       });
-      if (res.ok) { fetchDebts(); setSelectedDebt(null); setPaymentAmount(''); }
-    } catch (e) { console.error(e); }
+
+      const result = await res.json();
+      if (!res.ok) {
+        showToast('error', 'Payment failed', result?.error || 'Unable to record debt payment.');
+        return;
+      }
+
+      showToast('success', 'Payment recorded', `Debt payment of KES ${formatKES(amount)} was saved.`);
+      fetchDebts();
+      setSelectedDebt(null);
+      setPaymentAmount('');
+      setPaymentMethod('CASH');
+      setMpesaNumber('');
+      setMpesaStatus(null);
+    } catch (error: any) {
+      console.error(error);
+      showToast('error', 'Payment failed', error?.message || 'Unable to record payment.');
+    }
   };
 
   const statusVariant = (s: string) => s === 'PAID' ? 'success' : s === 'PARTIAL' ? 'warning' : 'danger';
@@ -236,7 +316,7 @@ export default function DebtsPage() {
                   <td className="py-4 px-4">
                     {debt.status !== 'PAID' && (
                       <button
-                        onClick={() => { setSelectedDebt(debt); setPaymentAmount(''); }}
+                        onClick={() => { setSelectedDebt(debt); setPaymentAmount(''); setPaymentMethod('CASH'); setMpesaNumber(''); setMpesaStatus(null); }}
                         className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:text-white"
                         style={{ borderColor: '#1a6b45', color: '#1a6b45' }}
                         onMouseEnter={e => { (e.target as HTMLElement).style.backgroundColor = '#1a6b45'; (e.target as HTMLElement).style.color = '#fff'; }}
@@ -281,18 +361,58 @@ export default function DebtsPage() {
                 <span className="text-red-500 font-medium">Remaining: KES {formatKES(selectedDebt.amount - selectedDebt.amountPaid)}</span>
               </div>
             </div>
-            <Input
-              label="Payment Amount (KES)"
-              type="number"
-              step="0.01"
-              required
-              max={selectedDebt.amount - selectedDebt.amountPaid}
-              value={paymentAmount}
-              onChange={e => setPaymentAmount(e.target.value)}
-            />
+
+            <div className="space-y-3">
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-2">Payment Method</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['CASH', 'MPESA'] as const).map(method => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setPaymentMethod(method)}
+                      className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${paymentMethod === method ? 'border-green-600 bg-green-600 text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'}`}
+                    >
+                      {method}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {paymentMethod === 'MPESA' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">M-Pesa mobile number</label>
+                  <input
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                    type="tel"
+                    placeholder="07XXXXXXXX"
+                    value={mpesaNumber}
+                    onChange={e => setMpesaNumber(e.target.value)}
+                  />
+                  {mpesaStatus && <p className="text-xs text-gray-500">{mpesaStatus}</p>}
+                </div>
+              )}
+
+              <Input
+                label="Payment Amount (KES)"
+                type="number"
+                step="0.01"
+                required
+                max={selectedDebt.amount - selectedDebt.amountPaid}
+                value={paymentAmount}
+                onChange={e => setPaymentAmount(e.target.value)}
+              />
+            </div>
           </div>
         </Modal>
       )}
+      <Toast
+        open={toastOpen}
+        title={toastTitle}
+        description={toastDescription}
+        variant={toastVariant}
+        onClose={() => setToastOpen(false)}
+      />
     </div>
   );
 }

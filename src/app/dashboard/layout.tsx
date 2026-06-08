@@ -153,29 +153,36 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar pathname={pathname} />
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          {children}
+    <div className="relative h-screen bg-gray-50">
+      <div className={locked ? 'pointer-events-none select-none opacity-50' : ''}>
+        <div className="flex h-screen bg-gray-50">
+          <Sidebar pathname={pathname} />
+          <main className="flex-1 overflow-auto">
+            <div className="p-8">
+              {children}
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
+
       {locked && (
-        <Modal title="Unlock Dashboard" onClose={handleUnlockCancel} onSubmit={handleUnlockSubmit} submitLabel="Unlock">
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">The dashboard is locked. Enter the password to continue.</p>
-            <Input
-              label="Password"
-              type="password"
-              required
-              placeholder="123456"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <p className="text-sm text-gray-500">Password is <strong>123456</strong> for this demo test.</p>
-            {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
-          </div>
-        </Modal>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+          <Modal title="Unlock Dashboard" onClose={handleUnlockCancel} onSubmit={handleUnlockSubmit} submitLabel="Unlock">
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">The dashboard is locked. Enter the password to continue.</p>
+              <Input
+                label="Password"
+                type="password"
+                required
+                placeholder="123456"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <p className="text-sm text-gray-500">Password is <strong>123456</strong> for this demo test.</p>
+              {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+            </div>
+          </Modal>
+        </div>
       )}
     </div>
   );

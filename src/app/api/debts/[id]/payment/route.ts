@@ -4,17 +4,28 @@ import { z } from "zod";
 
 const paymentSchema = z.object({
   amount: z.number().positive(),
+  paymentMethod: z.enum(['CASH', 'MPESA']).optional().default('CASH'),
+  mobileNumber: z.string().optional(),
   notes: z.string().optional(),
 });
 
 // POST - Record payment for a debt
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
+
   try {
     const body = await request.json();
-    const { amount, notes } = paymentSchema.parse(body);
+    const { amount, paymentMethod, mobileNumber, notes } = paymentSchema.parse(body);
+
+    if (paymentMethod === 'MPESA' && !mobileNumber?.match(/^\d{10}$/)) {
+      return NextResponse.json(
+        { error: 'Invalid mobile number for M-Pesa' },
+        { status: 400 }
+      );
+    }
 
     const debt = await prisma.debt.findUnique({
       where: { id: params.id },
@@ -43,12 +54,16 @@ export async function POST(
       );
     }
 
+    const defaultNote = paymentMethod === 'MPESA'
+      ? `Debt repayment via M-Pesa to ${mobileNumber}`
+      : 'Debt repayment via cash';
+
     // Record payment
     const payment = await prisma.debtPayment.create({
       data: {
         debtId: params.id,
         amount,
-        notes,
+        notes: notes ?? defaultNote,
       },
     });
 
