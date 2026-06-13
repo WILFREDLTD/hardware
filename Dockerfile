@@ -18,9 +18,13 @@ ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 RUN npm ci --production
 
-COPY --from=builder /app/.next .next
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma/
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client/
+COPY --from=builder /app/.next ./.next/
+COPY --from=builder /app/public ./public/
+COPY --from=builder /app/prisma ./prisma/
 COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/tsconfig.prisma.json ./tsconfig.prisma.json
 
 EXPOSE 3000
 CMD ["npm", "run", "start"]

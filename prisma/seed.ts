@@ -26,6 +26,12 @@ function getPackageConversion(category: string, baseUnit: string) {
 async function main() {
   console.log('Seeding database (TypeScript)...')
 
+  const existingProductCount = await prisma.product.count()
+  if (existingProductCount > 0) {
+    console.log('Database already seeded; skipping seed.')
+    return
+  }
+
   // Create 20 sample Products with realistic Kenyan hardware names
   const productDefinitions = [
     { name: 'PVC Pipe 1/2 inch', category: 'Plumbing', skuBase: 'PVC-12' },
