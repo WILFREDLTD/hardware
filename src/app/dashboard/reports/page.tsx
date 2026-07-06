@@ -18,7 +18,7 @@ interface Sale {
   saleDate: string;
   totalAmount: number;
   paymentStatus: string;
-  saleItems: { quantity: number; unitPrice: number; product: { name: string; category: string; purchasePrice: number } }[];
+  saleItems: { quantity: number; unitPrice: number; total?: number; discount?: number; product: { name: string; category: string; purchasePrice: number } }[];
 }
 interface Product {
   id: string;
@@ -220,7 +220,8 @@ export default function ReportsPage() {
     const map: Record<string, number> = {};
     filteredSales.forEach(s => s.saleItems?.forEach(it => {
       const cat = it.product?.category || 'Other';
-      map[cat] = (map[cat] || 0) + it.quantity * it.unitPrice;
+      const lineTotal = it.total ?? it.quantity * it.unitPrice;
+      map[cat] = (map[cat] || 0) + lineTotal;
     }));
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   })();
@@ -232,7 +233,7 @@ export default function ReportsPage() {
       const n = it.product?.name || 'Unknown';
       if (!map[n]) map[n] = { qty: 0, rev: 0 };
       map[n].qty += it.quantity;
-      map[n].rev += it.quantity * it.unitPrice;
+      map[n].rev += it.total ?? it.quantity * it.unitPrice;
     }));
     return Object.entries(map).sort((a, b) => b[1].rev - a[1].rev).slice(0, 10);
   })();

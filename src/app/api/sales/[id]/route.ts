@@ -84,8 +84,10 @@ export async function PATCH(
 
         if (typeof itemUpdate.quantity === "number" && itemUpdate.quantity !== currentItem.quantity) {
           itemsChanged = true;
+          const previousItemTotal = currentItem.total ?? currentItem.unitPrice * currentItem.quantity;
+          const newItemTotal = currentItem.quantity > 0 ? (itemUpdate.quantity / currentItem.quantity) * previousItemTotal : 0;
+          updatedTotal += newItemTotal - previousItemTotal;
           const quantityDelta = itemUpdate.quantity - currentItem.quantity;
-          updatedTotal += quantityDelta * currentItem.unitPrice;
 
           if (quantityDelta > 0) {
             if (currentItem.product.currentStock < quantityDelta) {
@@ -134,7 +136,7 @@ export async function PATCH(
               where: { id: currentItem.id },
               data: {
                 quantity: itemUpdate.quantity,
-                total: itemUpdate.quantity * currentItem.unitPrice,
+                total: newItemTotal,
               },
             })
           );
