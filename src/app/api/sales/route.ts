@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const saleSchema = z.object({
+  supplierName: z.string().optional(),
+  supplierNumber: z.string().optional(),
   items: z.array(
     z.object({
       productId: z.string(),
@@ -55,7 +57,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items, paymentStatus, paymentMethod, paidAmount, mobileNumber, notes, debtorName, debtorPhone, saleDate, subtotalAmount, discountAmount, finalAmount } =
+    const { items, paymentStatus, paymentMethod, paidAmount, mobileNumber, notes, debtorName, debtorPhone, saleDate, subtotalAmount, discountAmount, finalAmount, supplierName, supplierNumber } =
       saleSchema.parse(body);
 
     // Validate stock availability
@@ -100,6 +102,8 @@ export async function POST(request: NextRequest) {
         discountAmount: derivedDiscount,
         totalAmount,
         paymentStatus,
+        supplierName: supplierName ?? 'unknown',
+        supplierNumber: supplierNumber ?? 'unknown',
         notes: [
           paymentMethod && `Method: ${paymentMethod}`,
           paidAmount && `Paid: KES ${paidAmount.toFixed(2)}`,

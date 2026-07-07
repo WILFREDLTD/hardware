@@ -85,6 +85,8 @@ model Sale {
   paymentStatus     PaymentStatus
   discountAppliedBy  String?
   discountAppliedAt  DateTime?
+  supplierName      String        @default("unknown")
+  supplierNumber    String        @default("unknown")
   notes             String?
   deletedAt         DateTime?
   deletionReason    String?

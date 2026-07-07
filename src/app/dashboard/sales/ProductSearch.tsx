@@ -37,7 +37,10 @@ export default function ProductSearch({ query, suggestions, setQuery, addToCart 
                 <button
                   key={product.id}
                   type="button"
-                  onClick={() => addToCart(product)}
+                  onClick={() => {
+                    addToCart(product);
+                    setQuery('');
+                  }}
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
                 >
                   <div className="flex items-center justify-between gap-4">

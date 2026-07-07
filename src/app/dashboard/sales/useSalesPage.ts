@@ -60,6 +60,8 @@ export function useSalesPage() {
   const [finalAmountInput, setFinalAmountInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [showCalc, setShowCalc] = useState(false)
+  const [supplierName, setSupplierName] = useState('unknown')
+  const [supplierNumber, setSupplierNumber] = useState('unknown')
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -77,13 +79,34 @@ export function useSalesPage() {
     return () => clearTimeout(timeout)
   }, [query, products])
 
+  // Clear amount fields when cart is empty
+  useEffect(() => {
+    if (cart.length === 0) {
+      setCashPaid('')
+      setFinalAmountInput('')
+      setSupplierName('unknown')
+      setSupplierNumber('unknown')
+    }
+  }, [cart.length])
+
   const parsedFinalAmount = parseFloat(finalAmountInput)
-  const finalAmount = Number.isFinite(parsedFinalAmount)
+  const parsedCashPaid = parseFloat(cashPaid) || 0
+  
+  // Final Amount is the negotiated price (what customer is willing to pay)
+  const finalAmount = Number.isFinite(parsedFinalAmount) && parsedFinalAmount > 0
     ? Math.min(Math.max(parsedFinalAmount, 0), regularSubtotal)
     : regularSubtotal
+  
+  // Discount is the difference from original subtotal to negotiated final amount
   const discountValue = Math.max(0, regularSubtotal - finalAmount)
+  
+  // Total to pay is the final negotiated amount
   const total = finalAmount
-  const paidValue = parseFloat(cashPaid) || 0
+  
+  // Paid value is what the customer actually gives
+  const paidValue = parsedCashPaid
+  
+  // Change can be positive (change to give) or negative (customer owes)
   const changeValue = paidValue - total
   const displayedSales = Array.isArray(sales) ? sales : []
 
@@ -122,6 +145,8 @@ export function useSalesPage() {
         subtotalAmount: regularSubtotal,
         discountAmount: discountValue,
         finalAmount,
+        supplierName: supplierName || 'unknown',
+        supplierNumber: supplierNumber || 'unknown',
         notes: effectiveNotes,
       }
 
@@ -141,6 +166,8 @@ export function useSalesPage() {
       setToastOpen(true)
       setCashPaid('')
       setFinalAmountInput('')
+      setSupplierName('unknown')
+      setSupplierNumber('unknown')
       closeDebtModal()
       refreshSales()
       refreshProducts()
@@ -328,6 +355,10 @@ export function useSalesPage() {
     closeDebtModal,
     income,
     sales,
+    supplierName,
+    setSupplierName,
+    supplierNumber,
+    setSupplierNumber,
   }
 }
 

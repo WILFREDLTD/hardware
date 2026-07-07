@@ -6,6 +6,8 @@ const saleUpdateSchema = z.object({
   paymentStatus: z.enum(["PAID", "DEBT"]).optional(),
   debtorName: z.string().optional(),
   debtorPhone: z.string().optional(),
+  supplierName: z.string().optional(),
+  supplierNumber: z.string().optional(),
   items: z
     .array(
       z.object({
@@ -212,6 +214,12 @@ export async function PATCH(
           );
         }
       }
+    }
+
+    // allow updating supplier info
+    if (body.supplierName || body.supplierNumber) {
+      if (body.supplierName) saleUpdateData.supplierName = body.supplierName
+      if (body.supplierNumber) saleUpdateData.supplierNumber = body.supplierNumber
     }
 
     if (Object.keys(saleUpdateData).length > 0) {

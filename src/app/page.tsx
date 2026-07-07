@@ -152,7 +152,7 @@ export default function Home() {
             </svg>
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>Vico Softwares</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>VYQOR LABS</p>
             <p style={{ margin: 0, fontSize: '11px', color: '#64748b', letterSpacing: '0.04em', fontWeight: 500 }}>Hardware Store System</p>
           </div>
         </div>
@@ -530,7 +530,7 @@ export default function Home() {
             </button>
           </div>
           <p style={{ margin: '28px 0 0', fontSize: '14px', color: 'rgba(255,255,255,0.65)', fontStyle: 'italic' }}>
-            powered by vico softwares -0791614036
+            powered by VYQOR LABS -0791614036
           </p>
         </div>
       </section>

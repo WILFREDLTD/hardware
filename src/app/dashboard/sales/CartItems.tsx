@@ -34,7 +34,18 @@ export default function CartItems({ cart, updateQty, removeFromCart }: CartItems
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => updateQty(idx, Math.max(1, item.quantity - 1))} className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-sm font-bold">−</button>
-                <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={item.max}
+                  value={item.quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1
+                    updateQty(idx, Math.max(1, Math.min(item.max, val)))
+                  }}
+                  className="w-12 text-center text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-100 [&::-webkit-outer-spin-button]:hidden [&::-webkit-inner-spin-button]:hidden"
+                  style={{ appearance: 'textfield' }}
+                />
                 <button onClick={() => updateQty(idx, Math.min(item.max, item.quantity + 1))} className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-sm font-bold">+</button>
               </div>
               <div className="text-right">
