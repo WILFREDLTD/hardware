@@ -26,6 +26,7 @@ const navigationSections: NavSection[] = [
       { href: '/dashboard/products', label: 'Products' },
       { href: '/dashboard/inventory', label: 'Inventory' },
       { href: '/dashboard/sales', label: 'Sales' },
+      { href: '/dashboard/sales/recent', label: 'Recent Sales' },
       { href: '/dashboard/debts', label: 'Debts' },
     ],
   },
@@ -198,23 +199,22 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
         </button>
 
         <div className="mt-4 flex flex-col items-center gap-2">
-          <div className="w-full rounded-2xl bg-emerald-900/40 p-3 border border-emerald-800" style={{ maxWidth: '140px' }}>
-            <img
-              src="/vicotechQR.png"
-              alt="Dashboard access QR code"
-              style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '14px' }}
-            />
-          </div>
-          <p className="text-center text-[10px] uppercase tracking-[0.18em] text-emerald-200" style={{ lineHeight: 1.3 }}>
-            Scan for Consultation.
-          </p>
+          <a
+            href="https://wa.me/254791614036?text=I%20want%20to%20consult%20about%20the%20hardware%20stocks"
+            target="_blank"
+            rel="noreferrer"
+            className="w-full rounded-2xl border border-emerald-800 bg-blue-500 px-3 py-3 text-center text-sm font-semibold text-white transition hover:bg-blue-600"
+          >
+            Click to consult
+          </a>
         </div>
       </div>
 
       {/* Footer */}
       <div className="px-3 pb-4 pt-3 border-t border-emerald-900">
-        <p className="text-center text-[9px] uppercase tracking-widest text-yellow-200/80 mt-2" style={{ fontSize: '9px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic', color: '#c3c36a' }}>
-          Vico Softwares
+        <p className="text-center text-[9px] uppercase tracking-widest text-yellow-200/80 mt-2" style={{ fontSize: '15px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic', color: '#c3c36a' }}>
+       <span style={{ fontSize: '10px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic', color: '#dede0d' }}> Powered by: </span>
+        VYQOR LABS
         </p>
       </div>
     </aside>

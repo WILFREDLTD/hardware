@@ -66,7 +66,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <Header
-        title={`${greeting} 👋`}
+        title={`${greeting} `}
         subtitle="Here's what's happening at your store today"
         action={
           <Link href="/dashboard/sales">

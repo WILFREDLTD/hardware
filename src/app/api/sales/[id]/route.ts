@@ -6,6 +6,8 @@ const saleUpdateSchema = z.object({
   paymentStatus: z.enum(["PAID", "DEBT"]).optional(),
   debtorName: z.string().optional(),
   debtorPhone: z.string().optional(),
+  supplierName: z.string().optional(),
+  supplierNumber: z.string().optional(),
   items: z
     .array(
       z.object({
@@ -84,8 +86,10 @@ export async function PATCH(
 
         if (typeof itemUpdate.quantity === "number" && itemUpdate.quantity !== currentItem.quantity) {
           itemsChanged = true;
+          const previousItemTotal = currentItem.total ?? currentItem.unitPrice * currentItem.quantity;
+          const newItemTotal = currentItem.quantity > 0 ? (itemUpdate.quantity / currentItem.quantity) * previousItemTotal : 0;
+          updatedTotal += newItemTotal - previousItemTotal;
           const quantityDelta = itemUpdate.quantity - currentItem.quantity;
-          updatedTotal += quantityDelta * currentItem.unitPrice;
 
           if (quantityDelta > 0) {
             if (currentItem.product.currentStock < quantityDelta) {
@@ -134,7 +138,7 @@ export async function PATCH(
               where: { id: currentItem.id },
               data: {
                 quantity: itemUpdate.quantity,
-                total: itemUpdate.quantity * currentItem.unitPrice,
+                total: newItemTotal,
               },
             })
           );
@@ -210,6 +214,12 @@ export async function PATCH(
           );
         }
       }
+    }
+
+    // allow updating supplier info
+    if (body.supplierName || body.supplierNumber) {
+      if (body.supplierName) saleUpdateData.supplierName = body.supplierName
+      if (body.supplierNumber) saleUpdateData.supplierNumber = body.supplierNumber
     }
 
     if (Object.keys(saleUpdateData).length > 0) {

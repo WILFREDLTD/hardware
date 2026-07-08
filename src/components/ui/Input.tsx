@@ -17,6 +17,11 @@ export const Input: React.FC<InputProps> = ({
   const [visible, setVisible] = useState(false)
 
   const isPassword = props.type === 'password'
+  const { value, defaultValue, ...inputProps } = props
+  const isControlled = value !== undefined
+  const normalizedInputProps = isControlled
+    ? { ...inputProps, value }
+    : { ...inputProps, ...(defaultValue !== undefined ? { defaultValue } : {}) }
 
   return (
     <div className="w-full">
@@ -35,7 +40,7 @@ export const Input: React.FC<InputProps> = ({
               focus:border-transparent transition disabled:bg-gray-100 disabled:cursor-not-allowed
               ${error ? 'border-red-500' : ''} ${className}`
             }
-            {...props}
+            {...normalizedInputProps}
             type={visible ? 'text' : 'password'}
           />
           <button
@@ -65,7 +70,7 @@ export const Input: React.FC<InputProps> = ({
             ${error ? 'border-red-500' : ''}
             ${className}`
           }
-          {...props}
+          {...normalizedInputProps}
         />
       )}
 

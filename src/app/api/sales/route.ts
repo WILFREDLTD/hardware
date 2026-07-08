@@ -3,17 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const saleSchema = z.object({
+  supplierName: z.string().optional(),
+  supplierNumber: z.string().optional(),
   items: z.array(
     z.object({
       productId: z.string(),
       quantity: z.number().int().positive(),
       unitPrice: z.number().positive(),
+      discount: z.number().nonnegative().optional(),
+      total: z.number().nonnegative().optional(),
     })
   ),
   paymentStatus: z.enum(["PAID", "DEBT"]),
   paymentMethod: z.enum(["CASH", "MPESA"]).optional(),
   paidAmount: z.number().nonnegative().optional(),
   debtAmount: z.number().nonnegative().optional(),
+  subtotalAmount: z.number().nonnegative().optional(),
+  discountAmount: z.number().nonnegative().optional(),
+  finalAmount: z.number().nonnegative().optional(),
   mobileNumber: z.string().optional(),
   notes: z.string().optional(),
   debtorName: z.string().optional(),
@@ -50,7 +57,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items, paymentStatus, paymentMethod, paidAmount, mobileNumber, notes, debtorName, debtorPhone, saleDate } =
+    const { items, paymentStatus, paymentMethod, paidAmount, mobileNumber, notes, debtorName, debtorPhone, saleDate, subtotalAmount, discountAmount, finalAmount, supplierName, supplierNumber } =
       saleSchema.parse(body);
 
     // Validate stock availability
@@ -67,15 +74,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Calculate total
-    const totalAmount = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    const originalSubtotal = typeof subtotalAmount === "number" ? subtotalAmount : items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    const derivedDiscount = typeof discountAmount === "number"
+      ? discountAmount
+      : (typeof finalAmount === "number" ? Math.max(0, originalSubtotal - finalAmount) : 0);
+    const totalAmount = typeof finalAmount === "number"
+      ? Math.min(Math.max(finalAmount, 0), originalSubtotal)
+      : items.reduce((sum, item) => sum + (item.total ?? item.unitPrice * item.quantity), 0);
+    const saleItemsData = items.map((item) => {
+      const lineSubtotal = item.unitPrice * item.quantity;
+      const lineDiscount = originalSubtotal > 0 ? (lineSubtotal / originalSubtotal) * derivedDiscount : 0;
+      const lineTotal = Math.max(0, lineSubtotal - lineDiscount);
+      return {
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: lineDiscount,
+        total: lineTotal,
+      };
+    });
 
     // Create sale
     let sale = await prisma.sale.create({
       data: {
         saleDate: saleDate ? new Date(saleDate) : new Date(),
+        subtotalAmount: originalSubtotal,
+        discountAmount: derivedDiscount,
         totalAmount,
         paymentStatus,
+        supplierName: supplierName ?? 'unknown',
+        supplierNumber: supplierNumber ?? 'unknown',
         notes: [
           paymentMethod && `Method: ${paymentMethod}`,
           paidAmount && `Paid: KES ${paidAmount.toFixed(2)}`,
@@ -85,12 +113,7 @@ export async function POST(request: NextRequest) {
           .filter(Boolean)
           .join(' | ') || undefined,
         saleItems: {
-          create: items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.unitPrice * item.quantity,
-          })),
+          create: saleItemsData,
         },
       },
       include: {

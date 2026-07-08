@@ -27,15 +27,17 @@ model User {
 
 // Product/Item model
 model Product {
-  id            String   @id @default(cuid())
-  name          String
-  category      String
-  sku           String   @unique
+  id                String   @id @default(cuid())
+  name              String
+  category          String
+  nickname          String?  @unique
   currentStock      Int      @default(0)
   minStockLevel     Int      @default(5)
   baseUnit          String   @default("pcs")
   packageUnitLabel  String?
   packageSize       Int?
+  supplierName      String   @default("unknown")
+  supplierNumber    String   @default("unknown")
   unitPrice         Float
   purchasePrice     Float
   createdAt         DateTime @default(now())
@@ -46,7 +48,7 @@ model Product {
   transactions  InventoryTransaction[]
 
   @@index([category])
-  @@index([sku])
+  @@index([nickname])
   @@map("products")
   @@schema("hardware")
 }
@@ -77,15 +79,21 @@ enum TransactionType {
 
 // Sale model - Record all sales
 model Sale {
-  id            String        @id @default(cuid())
-  saleDate      DateTime      @default(now())
-  totalAmount    Float
-  paymentStatus  PaymentStatus
-  notes          String?
-  deletedAt      DateTime?
-  deletionReason String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  saleDate          DateTime      @default(now())
+  subtotalAmount    Float         @default(0)
+  discountAmount     Float         @default(0)
+  totalAmount       Float
+  paymentStatus     PaymentStatus
+  discountAppliedBy  String?
+  discountAppliedAt  DateTime?
+  supplierName      String        @default("unknown")
+  supplierNumber    String        @default("unknown")
+  notes             String?
+  deletedAt         DateTime?
+  deletionReason    String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   // Relations
   saleItems      SaleItem[]

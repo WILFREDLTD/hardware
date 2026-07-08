@@ -4,7 +4,7 @@ export interface Product {
   id: string;
   name: string;
   category: string;
-  sku: string;
+  nickname?: string | null;
   currentStock: number;
   minStockLevel: number;
   baseUnit: string;
