@@ -102,14 +102,9 @@ const stats = [
 export default function Home() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const LOCK_KEY = 'dashboardLocked';
 
   const openDashboard = () => {
-    if (typeof window !== 'undefined') {
-      window.sessionStorage.clear();
-      window.localStorage.setItem(LOCK_KEY, 'true');
-    }
-    router.push('/dashboard');
+    router.push('/login');
   };
 
   useEffect(() => {

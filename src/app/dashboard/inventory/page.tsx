@@ -17,6 +17,7 @@ export default function InventoryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [showInventoryPanel, setShowInventoryPanel] = useState(false);
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [toast, setToast] = useState({
     open: false,
     title: '',
@@ -249,7 +250,60 @@ export default function InventoryPage() {
       {loading ? (
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-500">Loading inventory…</div>
       ) : (
-        <InventoryTable products={filtered} getStockStatus={getStockStatus} />
+        <InventoryTable products={filtered} getStockStatus={getStockStatus} onProductClick={(id) => {
+          setFormData((current) => ({ ...current, productId: id, adjustQuantity: 0 }));
+          setShowInventoryModal(true);
+        }} />
+      )}
+
+      {showInventoryModal && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setShowInventoryModal(false)} />
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 px-4">
+            <div className="w-full max-w-4xl">
+              <div className="bg-white rounded-2xl shadow-lg max-h-[90vh] overflow-y-auto">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white">
+                  <div>
+                    <h3 className="text-lg font-semibold">Update Inventory</h3>
+                    <p className="text-xs text-gray-500">Adjust stock and pricing for the selected product.</p>
+                  </div>
+                  <button onClick={() => setShowInventoryModal(false)} className="text-sm text-gray-500">Close</button>
+                </div>
+                <div className="p-4">
+                  <InventoryForm
+                    products={products}
+                    selectedProduct={selectedProduct}
+                    selectedStatus={selectedStatus}
+                    selectedProductBoxes={selectedProductBoxes}
+                    selectedProductRemainder={selectedProductRemainder}
+                    latestTransactions={latestTransactions}
+                    formData={formData}
+                    submitting={submitting}
+                    equivalentUnits={equivalentUnits}
+                    isModal
+                    onFormChange={handleFormChange}
+                    onSubmit={async (e) => {
+                      await handleSubmit(e as unknown as React.FormEvent);
+                      setShowInventoryModal(false);
+                    }}
+                    onCancel={() => {
+                      setShowInventoryModal(false);
+                      setFormData({
+                        productId: '',
+                        minStockLevel: 0,
+                        unitPrice: 0,
+                        purchasePrice: 0,
+                        adjustMode: 'units',
+                        adjustQuantity: 0,
+                      });
+                    }}
+                    onRevertTransaction={handleRevertTransaction}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       <Toast

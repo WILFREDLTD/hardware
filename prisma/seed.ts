@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
@@ -13,7 +14,38 @@ const BASE_UNIT_MAP: Record<string, string> = {
   Masonry: 'kg',
   Building: 'kg',
   Safety: 'pcs',
+  Fasteners: 'pcs',
 }
+
+const SUPPLIER_OPTIONS = [
+  { name: 'Amani Hardware Ltd', number: '0712-100-200' },
+  { name: 'Mji Safi Supplies', number: '0722-300-400' },
+  { name: 'Kifaru Builders', number: '0733-500-600' },
+  { name: 'Mshauri Materials', number: '0744-700-800' },
+]
+
+const PRODUCT_NICKNAMES = [
+  'bomba-pvc',
+  'misumari-kubwa',
+  'brashi-rangi',
+  'balbu-led',
+  'mkanda-wa-copper',
+  'spana-kubadilika',
+  'blokki-tisa',
+  'glovu-kali',
+  'seti-ya-drill',
+  'simiti-50',
+  'sandpaper-kiboko',
+  'bar-ya-socket',
+  'hose-maji',
+  'detector-mswaki',
+  'bondia-adhesive',
+  'msumeno-wa-mkono',
+  'kikata-tile',
+  'rangi-ya-floor',
+  'tester-voltage',
+  'kofia-safety',
+]
 
 function getPackageConversion(category: string, baseUnit: string) {
   if (baseUnit === 'kg') return { packageUnitLabel: 'bag', packageSize: 50 };
@@ -25,6 +57,30 @@ function getPackageConversion(category: string, baseUnit: string) {
 
 async function main() {
   console.log('Seeding database (TypeScript)...')
+
+  await prisma.$transaction([
+    prisma.user.deleteMany(),
+    prisma.debtPayment.deleteMany(),
+    prisma.debt.deleteMany(),
+    prisma.saleItem.deleteMany(),
+    prisma.sale.deleteMany(),
+    prisma.inventoryTransaction.deleteMany(),
+    prisma.product.deleteMany(),
+    prisma.hardware.deleteMany(),
+    prisma.hardwareList.deleteMany(),
+  ])
+
+  const demoPassword = await bcrypt.hash('123456', 10);
+  await prisma.user.create({
+    data: {
+      email: 'demo@hardware.com',
+      password: demoPassword,
+      firstName: 'Store',
+      lastName: 'Owner',
+      phone: '0712345678',
+    },
+  });
+  console.log('Created demo user: demo@hardware.com / 123456');
 
   // Create 20 sample Products with realistic Kenyan hardware names
   const productDefinitions = [
@@ -57,16 +113,20 @@ async function main() {
     const purchasePrice = parseFloat((unitPrice * (0.5 + Math.random() * 0.35)).toFixed(2))
     const baseUnit = BASE_UNIT_MAP[def.category] || 'pcs'
     const packageInfo = getPackageConversion(def.category, baseUnit)
+    const supplier = SUPPLIER_OPTIONS[i % SUPPLIER_OPTIONS.length]
+    const nickname = PRODUCT_NICKNAMES[i] || `${def.skuBase.toLowerCase()}-${i + 1}`
     const p = await prisma.product.create({
       data: {
         name: def.name,
         category: def.category,
-        sku: `${def.skuBase}-${i + 1}`,
+        nickname,
         currentStock: randInt(10, 200),
         minStockLevel: randInt(5, 15),
         baseUnit,
         packageUnitLabel: packageInfo.packageUnitLabel,
         packageSize: packageInfo.packageSize,
+        supplierName: supplier.name,
+        supplierNumber: supplier.number,
         unitPrice,
         purchasePrice,
       },
@@ -156,10 +216,13 @@ async function main() {
 
   // Create a few Sales and SaleItems
   for (let s = 1; s <= 8; s++) {
+    const supplier = SUPPLIER_OPTIONS[(s - 1) % SUPPLIER_OPTIONS.length]
     const sale = await prisma.sale.create({
       data: {
         totalAmount: 0,
         paymentStatus: s % 3 === 0 ? 'DEBT' : 'PAID',
+        supplierName: supplier.name,
+        supplierNumber: supplier.number,
       },
     })
 

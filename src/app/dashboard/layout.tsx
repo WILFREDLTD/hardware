@@ -1,4 +1,5 @@
 'use client';
+import { useSession } from 'next-auth/react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -33,6 +34,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { status } = useSession();
   const [ready, setReady] = useState(false);
   const [locked, setLocked] = useState(false);
   const [password, setPassword] = useState('');
@@ -143,15 +145,25 @@ export default function DashboardLayout({
   };
 
   const handleUnlockCancel = () => {
-    router.push('/');
+    router.push('/login');
   };
 
-  if (!ready) {
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  if (!ready || status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center text-gray-500">Checking access…</div>
       </div>
     );
+  }
+
+  if (status === 'unauthenticated') {
+    return null;
   }
 
   return (

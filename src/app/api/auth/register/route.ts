@@ -6,7 +6,8 @@ import { z } from "zod";
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  name: z.string().min(2),
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
   phone: z.string().optional(),
 });
 
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Validate input
-    const { email, password, name, phone } = registerSchema.parse(body);
+    const { email, password, firstName, lastName, phone } = registerSchema.parse(body);
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -37,7 +38,8 @@ export async function POST(request: NextRequest) {
       data: {
         email,
         password: hashedPassword,
-        name,
+        firstName,
+        lastName,
         phone,
       },
     });
@@ -46,7 +48,8 @@ export async function POST(request: NextRequest) {
       {
         id: user.id,
         email: user.email,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
       },
       { status: 201 }
     );

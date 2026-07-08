@@ -60,8 +60,7 @@ export function useSalesPage() {
   const [finalAmountInput, setFinalAmountInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [showCalc, setShowCalc] = useState(false)
-  const [supplierName, setSupplierName] = useState('unknown')
-  const [supplierNumber, setSupplierNumber] = useState('unknown')
+  
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -85,8 +84,6 @@ export function useSalesPage() {
     if (cart.length === 0) {
       setCashPaid('')
       setFinalAmountInput('')
-      setSupplierName('unknown')
-      setSupplierNumber('unknown')
     }
   }, [cart.length])
 
@@ -146,8 +143,6 @@ export function useSalesPage() {
         subtotalAmount: regularSubtotal,
         discountAmount: discountValue,
         finalAmount,
-        supplierName: supplierName || 'unknown',
-        supplierNumber: supplierNumber || 'unknown',
         notes: effectiveNotes,
       }
 
@@ -167,8 +162,6 @@ export function useSalesPage() {
       setToastOpen(true)
       setCashPaid('')
       setFinalAmountInput('')
-      setSupplierName('unknown')
-      setSupplierNumber('unknown')
       closeDebtModal()
       refreshSales()
       refreshProducts()
@@ -356,10 +349,6 @@ export function useSalesPage() {
     closeDebtModal,
     income,
     sales,
-    supplierName,
-    setSupplierName,
-    supplierNumber,
-    setSupplierNumber,
   }
 }
 

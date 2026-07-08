@@ -63,10 +63,6 @@ export default function SalesPageView(props: SalesPageProps) {
     closeDebtModal,
     income,
     sales,
-    supplierName,
-    setSupplierName,
-    supplierNumber,
-    setSupplierNumber,
   } = props
 
   return (
@@ -113,10 +109,6 @@ export default function SalesPageView(props: SalesPageProps) {
             cartLength={cart.length}
             setShowCalc={setShowCalc}
             handleCashSale={handleCashSale}
-            supplierName={supplierName}
-            setSupplierName={setSupplierName}
-            supplierNumber={supplierNumber}
-            setSupplierNumber={setSupplierNumber}
           />
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -30,8 +31,10 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAutoLockModal, setShowAutoLockModal] = useState(false);
   const [autoLockMinutes, setAutoLockMinutes] = useState('1');
-  const now = new Date()
-  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening'
+  const { data: session } = useSession();
+  const now = new Date();
+  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (session?.user as any)?.firstName || session?.user?.name || 'there';
 
   useEffect(() => {
     const current = typeof window !== 'undefined' ? window.localStorage.getItem('autoLockUptimeMinutes') : null;
@@ -66,7 +69,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <Header
-        title={`${greeting} `}
+        title={`${greeting}, ${firstName}`}
         subtitle="Here's what's happening at your store today"
         action={
           <Link href="/dashboard/sales">

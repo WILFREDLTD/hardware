@@ -25,11 +25,14 @@ interface Props {
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   onRevertTransaction: (id: string) => void;
+  isModal?: boolean;
 }
 
-export function InventoryForm({ products, selectedProduct, selectedStatus, selectedProductBoxes, selectedProductRemainder, latestTransactions, formData, submitting, equivalentUnits, onFormChange, onSubmit, onCancel, onRevertTransaction }: Props) {
+export function InventoryForm({ products, selectedProduct, selectedStatus, selectedProductBoxes, selectedProductRemainder, latestTransactions, formData, submitting, equivalentUnits, onFormChange, onSubmit, onCancel, onRevertTransaction, isModal }: Props) {
+  const containerClass = isModal ? 'grid gap-4 grid-cols-1' : 'grid gap-6 lg:grid-cols-[1.4fr_0.8fr]'
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
+    <div className={containerClass}>
       <Card className="p-4">
         <div className="flex items-center justify-between mb-4 gap-4">
           <div>

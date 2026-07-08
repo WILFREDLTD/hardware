@@ -328,63 +328,66 @@ export default function ProductsPage() {
 
       {showModal && (
         <Modal title={isEditing ? 'Edit Product' : 'Add Product'} onClose={handleCloseModal} onSubmit={handleProductSubmit} submitDisabled={isSaving} submitLabel={isSaving ? 'Saving...' : undefined}>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Product Name" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1.5">Category <span className="text-red-500">*</span></label>
-                <select
-                  required
-                  value={formData.category}
-                  onChange={handleCategoryChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all"
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                  <option value="NEW_CATEGORY" className="font-semibold text-blue-600">+ New Category</option>
-                </select>
-              </div>
-            </div>
-
-            <Input label="Nickname" placeholder="Optional short name" value={formData.nickname} onChange={(e) => setFormData({ ...formData, nickname: e.target.value })} />
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1.5">Base Unit</label>
-                <select
-                  value={formData.baseUnit}
-                  onChange={handleBaseUnitChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all"
-                >
-                  {baseUnits.map((unit) => (
-                    <option key={unit} value={unit}>{unit}</option>
-                  ))}
-                  <option value="NEW_UNIT" className="font-semibold text-blue-600">+ New Unit</option>
-                </select>
-              </div>
-              <Input label="Package Unit" placeholder="bag, box, bundle" value={formData.packageUnitLabel} onChange={(e) => setFormData({ ...formData, packageUnitLabel: e.target.value })} />
-              <Input label="Package Size" type="number" min="0" value={formData.packageSize} onChange={(e) => setFormData({ ...formData, packageSize: parseInt(e.target.value || '0', 10) })} />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Supplier Name" placeholder="unknown" value={formData.supplierName} onChange={(e) => setFormData({ ...formData, supplierName: e.target.value })} />
-              <Input label="Supplier Number" placeholder="unknown" value={formData.supplierNumber} onChange={(e) => setFormData({ ...formData, supplierNumber: e.target.value })} />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {formData.packageSize ? (
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                  <p className="font-semibold text-gray-800">Package conversion</p>
-                  <p className="mt-2">1 {formData.packageUnitLabel || 'package'} = {formData.packageSize} {formData.baseUnit}</p>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <Input label="Product Name" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                <Input label="Nickname" placeholder="Optional short name" value={formData.nickname} onChange={(e) => setFormData({ ...formData, nickname: e.target.value })} />
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-700 mb-1.5">Base Unit</label>
+                    <select
+                      value={formData.baseUnit}
+                      onChange={handleBaseUnitChange}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all"
+                    >
+                      {baseUnits.map((unit) => (
+                        <option key={unit} value={unit}>{unit}</option>
+                      ))}
+                      <option value="NEW_UNIT" className="font-semibold text-blue-600">+ New Unit</option>
+                    </select>
+                  </div>
+                  <Input label="Package Unit" placeholder="box, bag, bundle" value={formData.packageUnitLabel} onChange={(e) => setFormData({ ...formData, packageUnitLabel: e.target.value })} />
+                  <Input label="Package Size" type="number" min="0" value={formData.packageSize} onChange={(e) => setFormData({ ...formData, packageSize: parseInt(e.target.value || '0', 10) })} />
                 </div>
-              ) : (
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                  <p className="font-semibold text-gray-800">Package conversion</p>
-                  <p className="mt-2">Set the package label and item amount per package above.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 inline-block">Category <span className="text-red-500">*</span></label>
+                  <select
+                    required
+                    value={formData.category}
+                    onChange={handleCategoryChange}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="NEW_CATEGORY" className="font-semibold text-blue-600">+ New Category</option>
+                  </select>
                 </div>
-              )}
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="text-xs text-gray-500 font-semibold uppercase mb-2">Supplier</div>
+                  <div className="space-y-2">
+                    <Input label="Supplier Name" placeholder="unknown" value={formData.supplierName} onChange={(e) => setFormData({ ...formData, supplierName: e.target.value })} />
+                    <Input label="Supplier Number" placeholder="unknown" value={formData.supplierNumber} onChange={(e) => setFormData({ ...formData, supplierNumber: e.target.value })} />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="text-xs text-gray-500 font-semibold uppercase mb-2">Package conversion</div>
+                  <div className="text-sm text-gray-700">
+                    {formData.packageSize ? (
+                      <p>1 {formData.packageUnitLabel || 'package'} = {formData.packageSize} {formData.baseUnit}</p>
+                    ) : (
+                      <p>Set the package unit and size to enable package conversions.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </Modal>

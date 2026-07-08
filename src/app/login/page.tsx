@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Link from 'next/link';
@@ -17,15 +18,28 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    // For now, demo login
-    if (formData.email && formData.password) {
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
-        window.localStorage.setItem('dashboardLocked', 'false');
-      }
-      setTimeout(() => {
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (result?.error) {
+        setError(result.error || 'Invalid email or password');
+      } else if (result?.ok) {
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
+          window.localStorage.setItem('dashboardLocked', 'false');
+        }
         router.push('/dashboard');
-      }, 500);
+      } else {
+        setError('Unable to sign in, please try again.');
+      }
+    } catch (err: any) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,8 +77,6 @@ export default function LoginPage() {
               setFormData({ ...formData, password: e.target.value })
             }
           />
-
-          <p className="text-sm text-gray-500">Password is <strong>123456</strong> for this demo test.</p>
 
           <Button
             type="submit"

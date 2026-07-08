@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AutoLock from '@/components/layout/AutoLock';
+import ClientProviders from '@/components/ClientProviders';
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AutoLock>{children}</AutoLock>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );
