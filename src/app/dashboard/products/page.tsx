@@ -11,12 +11,14 @@ interface Product {
   id: string;
   name: string;
   category: string;
-  sku: string;
+  nickname?: string | null;
   currentStock: number;
   minStockLevel: number;
   baseUnit: string;
   packageUnitLabel?: string;
   packageSize?: number;
+  supplierName?: string;
+  supplierNumber?: string;
   unitPrice: number;
   purchasePrice: number;
   createdAt: string;
@@ -65,10 +67,12 @@ export default function ProductsPage() {
     id: '',
     name: '',
     category: '',
-    sku: '',
+    nickname: '',
     baseUnit: 'kg',
     packageUnitLabel: '',
     packageSize: 0,
+    supplierName: '',
+    supplierNumber: '',
   });
 
   useEffect(() => {
@@ -104,10 +108,12 @@ export default function ProductsPage() {
       id: '',
       name: '',
       category: '',
-      sku: '',
+      nickname: '',
       baseUnit: 'kg',
       packageUnitLabel: '',
       packageSize: 0,
+      supplierName: '',
+      supplierNumber: '',
     });
     setShowModal(true);
   };
@@ -118,10 +124,12 @@ export default function ProductsPage() {
       id: product.id,
       name: product.name,
       category: product.category,
-      sku: product.sku,
+      nickname: product.nickname || '',
       baseUnit: product.baseUnit,
       packageUnitLabel: product.packageUnitLabel || '',
       packageSize: product.packageSize || 0,
+      supplierName: product.supplierName || '',
+      supplierNumber: product.supplierNumber || '',
     });
     setShowModal(true);
   };
@@ -137,10 +145,12 @@ export default function ProductsPage() {
       id: '',
       name: '',
       category: '',
-      sku: '',
+      nickname: '',
       baseUnit: 'kg',
       packageUnitLabel: '',
       packageSize: 0,
+      supplierName: '',
+      supplierNumber: '',
     });
   };
 
@@ -154,6 +164,9 @@ export default function ProductsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          nickname: formData.nickname.trim() || undefined,
+          supplierName: formData.supplierName.trim() || 'unknown',
+          supplierNumber: formData.supplierNumber.trim() || 'unknown',
           packageSize: formData.packageSize ? parseInt(String(formData.packageSize), 10) : undefined,
         }),
       });
@@ -228,7 +241,7 @@ export default function ProductsPage() {
   const filtered = products.filter((product) =>
     !search ||
     product.name.toLowerCase().includes(search.toLowerCase()) ||
-    product.sku.toLowerCase().includes(search.toLowerCase()) ||
+    (product.nickname || '').toLowerCase().includes(search.toLowerCase()) ||
     product.category.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -260,7 +273,7 @@ export default function ProductsPage() {
       <div className="relative">
         <input
           className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all"
-          placeholder="Search products, SKU, category…"
+          placeholder="Search by name, nickname, or category…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -276,6 +289,7 @@ export default function ProductsPage() {
               <th className="text-left py-3.5 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Product</th>
               <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Category</th>
               <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Base Unit</th>
+              <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Supplier</th>
               <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Package Rule</th>
             </tr>
           </thead>
@@ -290,7 +304,7 @@ export default function ProductsPage() {
                       </div>
                       <div>
                         <div className="text-sm font-semibold text-gray-900">{product.name}</div>
-                        <div className="text-xs text-gray-400 mt-0.5 font-mono">SKU: {product.sku}</div>
+                        <div className="text-xs text-gray-400 mt-0.5 font-mono">Nickname: {product.nickname || product.name}</div>
                       </div>
                     </div>
                   </td>
@@ -298,6 +312,10 @@ export default function ProductsPage() {
                     <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-lg">{product.category}</span>
                   </td>
                   <td className="py-4 px-4 text-sm text-gray-700">{product.baseUnit}</td>
+                  <td className="py-4 px-4 text-sm text-gray-700">
+                    <div className="text-sm font-semibold text-gray-900">{product.supplierName || 'unknown'}</div>
+                    <div className="text-xs text-gray-400">{product.supplierNumber || 'unknown'}</div>
+                  </td>
                   <td className="py-4 px-4 text-sm text-gray-700">
                     {product.packageSize ? `1 ${product.packageUnitLabel || 'package'} = ${product.packageSize} ${product.baseUnit}` : '—'}
                   </td>
@@ -330,7 +348,7 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            <Input label="SKU" required value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} />
+            <Input label="Nickname" placeholder="Optional short name" value={formData.nickname} onChange={(e) => setFormData({ ...formData, nickname: e.target.value })} />
 
             <div className="grid grid-cols-3 gap-4">
               <div className="flex flex-col">
@@ -348,6 +366,11 @@ export default function ProductsPage() {
               </div>
               <Input label="Package Unit" placeholder="bag, box, bundle" value={formData.packageUnitLabel} onChange={(e) => setFormData({ ...formData, packageUnitLabel: e.target.value })} />
               <Input label="Package Size" type="number" min="0" value={formData.packageSize} onChange={(e) => setFormData({ ...formData, packageSize: parseInt(e.target.value || '0', 10) })} />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="Supplier Name" placeholder="unknown" value={formData.supplierName} onChange={(e) => setFormData({ ...formData, supplierName: e.target.value })} />
+              <Input label="Supplier Number" placeholder="unknown" value={formData.supplierNumber} onChange={(e) => setFormData({ ...formData, supplierNumber: e.target.value })} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

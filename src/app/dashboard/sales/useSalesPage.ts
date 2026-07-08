@@ -69,9 +69,10 @@ export function useSalesPage() {
       const lowered = query.toLowerCase()
       setSuggestions(
         products
-          .filter((product) =>
-            product.name.toLowerCase().includes(lowered) || product.sku.toLowerCase().includes(lowered),
-          )
+          .filter((product) => {
+            const nickname = (product.nickname || '').toLowerCase()
+            return product.name.toLowerCase().includes(lowered) || nickname.includes(lowered)
+          })
           .slice(0, 8),
       )
     }, 300)

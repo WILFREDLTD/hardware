@@ -24,7 +24,7 @@ interface Product {
   id: string;
   name: string;
   category: string;
-  sku: string;
+  nickname?: string | null;
   currentStock: number;
   minStockLevel: number;
   unitPrice: number;
@@ -284,9 +284,9 @@ export default function ReportsPage() {
   }
 
   function exportInventoryCSV() {
-    const rows = [['Name', 'SKU', 'Category', 'Current Stock', 'Min Level', 'Unit Price (KES)', 'Purchase Price (KES)', 'Status']];
+    const rows = [['Name', 'Nickname', 'Category', 'Current Stock', 'Min Level', 'Unit Price (KES)', 'Purchase Price (KES)', 'Status']];
     products.forEach(p => rows.push([
-      p.name, p.sku, p.category,
+      p.name, p.nickname || p.name, p.category,
       String(p.currentStock), String(p.minStockLevel),
       p.unitPrice.toFixed(2), p.purchasePrice.toFixed(2),
       p.currentStock === 0 ? 'Out of Stock' : p.currentStock <= p.minStockLevel ? 'Low Stock' : 'In Stock',
@@ -566,7 +566,7 @@ export default function ReportsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100">
-                        {['Product', 'SKU', 'Category', 'Stock', 'Min', 'Unit Price', 'Stock Value', 'Status'].map(h => (
+                        {['Product', 'Nickname', 'Category', 'Stock', 'Min', 'Unit Price', 'Stock Value', 'Status'].map(h => (
                           <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
                         ))}
                       </tr>
@@ -577,7 +577,7 @@ export default function ReportsPage() {
                         return (
                           <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/70">
                             <td className="py-2.5 px-3 font-medium text-gray-900">{p.name}</td>
-                            <td className="py-2.5 px-3 text-gray-400 font-mono text-xs">{p.sku}</td>
+                            <td className="py-2.5 px-3 text-gray-400 font-mono text-xs">{p.nickname || p.name}</td>
                             <td className="py-2.5 px-3 text-gray-600">{p.category}</td>
                             <td className="py-2.5 px-3 font-bold text-gray-900">{p.currentStock}</td>
                             <td className="py-2.5 px-3 text-gray-400">{p.minStockLevel}</td>

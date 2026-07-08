@@ -4,7 +4,7 @@ import { formatKES } from '@/lib/utils'
 type Product = {
   id: string
   name: string
-  sku: string
+  nickname?: string | null
   currentStock: number
   unitPrice: number
 }
@@ -29,7 +29,7 @@ export default function ProductSearch({ query, suggestions, setQuery, addToCart 
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by product name or SKU…"
+            placeholder="Search by product name or nickname…"
           />
           {suggestions.length > 0 && (
             <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
@@ -46,7 +46,7 @@ export default function ProductSearch({ query, suggestions, setQuery, addToCart 
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">SKU: {product.sku}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">Nickname: {product.nickname || product.name}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold text-gray-900">KES {formatKES(product.unitPrice)}</div>
