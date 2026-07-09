@@ -20,7 +20,7 @@ interface DashboardStats {
 
 const quickActions = [
   { label: 'Configure Auto-lock', action: 'configureAutoLock', icon: '⏱️', color: '#1a6b45', desc: 'Set idle timeout before lock' },
-  { label: 'Add Product', href: '/dashboard/inventory', icon: '📦', color: '#2563eb', desc: 'Update your stock' },
+  { label: 'Settings', href: '/dashboard/settings', icon: '⚙️', color: '#2563eb', desc: 'Manage store and lock settings' },
   { label: 'Record Payment', href: '/dashboard/debts', icon: '💳', color: '#7c3aed', desc: 'Log debt repayment' },
 ]
 
@@ -72,9 +72,14 @@ export default function DashboardPage() {
         title={`${greeting}, ${firstName}`}
         subtitle="Here's what's happening at your store today"
         action={
-          <Link href="/dashboard/sales">
-            <Button>+ New Sale</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/dashboard/settings">
+              <Button className="bg-gray-200 text-gray-900 hover:bg-gray-300">⚙️ Settings</Button>
+            </Link>
+            <Link href="/dashboard/sales">
+              <Button>+ New Sale</Button>
+            </Link>
+          </div>
         }
       />
 
@@ -204,12 +209,23 @@ export default function DashboardPage() {
         </div>
       )}
       {showAutoLockModal && (
-        <Modal title="Configure Auto-lock" onClose={() => setShowAutoLockModal(false)} onSubmit={(e) => {
+        <Modal title="Configure Auto-lock" onClose={() => setShowAutoLockModal(false)} onSubmit={async (e) => {
           e.preventDefault();
           const minutes = parseInt(autoLockMinutes, 10);
           if (isNaN(minutes) || minutes < 1) {
             return;
           }
+
+          const response = await fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ autoLockTimeoutMinutes: minutes }),
+          });
+
+          if (!response.ok) {
+            return;
+          }
+
           window.localStorage.setItem('autoLockUptimeMinutes', String(minutes));
           window.dispatchEvent(new Event('autoLockConfigChanged'));
           setShowAutoLockModal(false);

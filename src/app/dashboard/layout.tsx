@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import Toast from '@/components/ui/Toast';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -34,11 +35,13 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { status } = useSession();
+  const { status, data: session } = useSession();
   const [ready, setReady] = useState(false);
   const [locked, setLocked] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [unlocking, setUnlocking] = useState(false);
+  const [showUnlockError, setShowUnlockError] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -128,20 +131,38 @@ export default function DashboardLayout({
     };
   }, []);
 
-  const handleUnlockSubmit = (e: React.FormEvent) => {
+  const handleUnlockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === '123456') {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(LOCK_KEY, 'false');
-        window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ lastActivity: Date.now() }));
-        window.dispatchEvent(new Event(SESSION_CREATED_EVENT));
+    setUnlocking(true);
+    setPasswordError('');
+
+    try {
+      const response = await fetch('/api/auth/verify-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(LOCK_KEY, 'false');
+          window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ lastActivity: Date.now() }));
+          window.dispatchEvent(new Event(SESSION_CREATED_EVENT));
+        }
+        setPassword('');
+        setLocked(false);
+      } else {
+        setPasswordError('Incorrect password');
+        setShowUnlockError(true);
+        setTimeout(() => setShowUnlockError(false), 4000);
       }
-      setPasswordError('');
-      setPassword('');
-      setLocked(false);
-      return;
+    } catch (error) {
+      setPasswordError('An error occurred. Please try again.');
+      setShowUnlockError(true);
+      setTimeout(() => setShowUnlockError(false), 4000);
+    } finally {
+      setUnlocking(false);
     }
-    setPasswordError('Incorrect password');
   };
 
   const handleUnlockCancel = () => {
@@ -183,19 +204,29 @@ export default function DashboardLayout({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
           <Modal title="Unlock Dashboard" onClose={handleUnlockCancel} onSubmit={handleUnlockSubmit} submitLabel="Unlock">
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">The dashboard is locked. Enter the password to continue.</p>
+              <p className="text-sm text-gray-600">
+                Welcome back, <span className="font-semibold">{(session?.user as any)?.firstName || session?.user?.email}</span>! Enter your password to continue.
+              </p>
               <Input
                 label="Password"
                 type="password"
                 required
-                placeholder="123456"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={unlocking}
               />
-              <p className="text-sm text-gray-500">Password is <strong>123456</strong> for this demo test.</p>
               {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
             </div>
           </Modal>
+
+          <Toast
+            title="Unlock Failed"
+            description={passwordError}
+            open={showUnlockError}
+            variant="error"
+            onClose={() => setShowUnlockError(false)}
+          />
         </div>
       )}
     </div>

@@ -13,14 +13,18 @@ datasource db {
 
 // Store Owner/Admin model - Single tenant (Optional, for future multi-tenant expansion)
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  password   String
-  firstName  String
-  lastName   String
-  phone      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  firstName       String
+  lastName        String
+  phone           String?
+  storeName       String?  @default("My Hardware Store")
+  storeLocation   String?
+  storeDescription String?
+  autoLockTimeoutMinutes Int? @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("users")
   @@schema("hardware")

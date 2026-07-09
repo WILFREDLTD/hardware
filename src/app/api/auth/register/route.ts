@@ -5,7 +5,12 @@ import { z } from "zod";
 
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .refine((val) => /[A-Z]/.test(val), "Password must contain at least one uppercase letter")
+    .refine((val) => /[0-9]/.test(val), "Password must contain at least one number")
+    .refine((val) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val), "Password must contain at least one punctuation mark"),
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   phone: z.string().optional(),
