@@ -13,18 +13,22 @@ datasource db {
 
 // Store Owner/Admin model - Single tenant (Optional, for future multi-tenant expansion)
 model User {
-  id              String   @id @default(cuid())
-  email           String   @unique
-  password        String
-  firstName       String
-  lastName        String
-  phone           String?
-  storeName       String?  @default("My Hardware Store")
-  storeLocation   String?
-  storeDescription String?
-  autoLockTimeoutMinutes Int? @default(1)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  email                  String   @unique
+  password               String
+  firstName              String
+  lastName               String
+  phone                  String?
+  storeName              String?  @default("My Hardware Store")
+  storeLocation          String?
+  storeDescription       String?
+  autoLockTimeoutMinutes Int?     @default(1)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  hardwareLists HardwareList[]
+  hardwares     Hardware[]
+  products      Product[]
 
   @@map("users")
   @@schema("hardware")
@@ -32,42 +36,55 @@ model User {
 
 // Product/Item model
 model Product {
-  id                String   @id @default(cuid())
-  name              String
-  category          String
-  nickname          String?  @unique
-  currentStock      Int      @default(0)
-  minStockLevel     Int      @default(5)
-  baseUnit          String   @default("pcs")
-  packageUnitLabel  String?
-  packageSize       Int?
-  supplierName      String   @default("unknown")
-  supplierNumber    String   @default("unknown")
-  unitPrice         Float
-  purchasePrice     Float
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default(cuid())
+  name             String
+  category         String
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nickname         String?  @unique
+  currentStock     Int      @default(0)
+  minStockLevel    Int      @default(5)
+  baseUnit         String   @default("pcs")
+  packageUnitLabel String?
+  packageSize      Int?
+  supplierName     String   @default("unknown")
+  supplierNumber   String   @default("unknown")
+  unitPrice        Float
+  purchasePrice    Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
-  saleItems     SaleItem[]
-  transactions  InventoryTransaction[]
+  saleItems    SaleItem[]
+  transactions InventoryTransaction[]
 
   @@index([category])
+  @@index([userId])
   @@index([nickname])
   @@map("products")
   @@schema("hardware")
 }
 
+// Categories for organizing products
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("categories")
+  @@schema("hardware")
+}
+
 // Inventory Transaction model - Track items in/out
 model InventoryTransaction {
-  id        String            @id @default(cuid())
+  id        String          @id @default(cuid())
   productId String
-  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   type      TransactionType
   quantity  Int
   notes     String?
-  date      DateTime          @default(now())
-  createdAt DateTime          @default(now())
+  date      DateTime        @default(now())
+  createdAt DateTime        @default(now())
 
   @@index([productId])
   @@index([date])
@@ -87,11 +104,11 @@ model Sale {
   id                String        @id @default(cuid())
   saleDate          DateTime      @default(now())
   subtotalAmount    Float         @default(0)
-  discountAmount     Float         @default(0)
+  discountAmount    Float         @default(0)
   totalAmount       Float
   paymentStatus     PaymentStatus
-  discountAppliedBy  String?
-  discountAppliedAt  DateTime?
+  discountAppliedBy String?
+  discountAppliedAt DateTime?
   supplierName      String        @default("unknown")
   supplierNumber    String        @default("unknown")
   notes             String?
@@ -101,8 +118,8 @@ model Sale {
   updatedAt         DateTime      @updatedAt
 
   // Relations
-  saleItems      SaleItem[]
-  debt           Debt?
+  saleItems SaleItem[]
+  debt      Debt?
 
   @@index([saleDate])
   @@index([paymentStatus])
@@ -152,7 +169,7 @@ model Debt {
   updatedAt   DateTime   @updatedAt
 
   // Relations
-  payments    DebtPayment[]
+  payments DebtPayment[]
 
   @@index([status])
   @@index([date])
@@ -195,7 +212,7 @@ model Report {
   totalDebts     Float      @default(0)
   debtsCollected Float      @default(0)
   debtsPending   Float      @default(0)
-  bestSellers    Json?      // JSON array of top products
+  bestSellers    Json? // JSON array of top products
   data           Json?
   generatedAt    DateTime   @default(now())
 
@@ -215,33 +232,39 @@ enum ReportType {
 
 // Hardware list model - a simple list/category container for hardware items
 model HardwareList {
-  id        String     @id @default(cuid())
-  name      String
+  id          String     @id @default(cuid())
+  name        String
   description String?
-  hardwares Hardware[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hardwares   Hardware[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
+  @@index([userId])
   @@map("hardware_lists")
   @@schema("hardware")
 }
 
 // Hardware model - represents specialized hardware items (separate from Product)
 model Hardware {
-  id           String       @id @default(cuid())
-  name         String
-  listId       String?
-  list         HardwareList? @relation(fields: [listId], references: [id], onDelete: SetNull)
-  sku          String       @unique
-  description  String?
-  quantity     Int          @default(0)
-  unitPrice    Float
+  id            String        @id @default(cuid())
+  name          String
+  listId        String?
+  list          HardwareList? @relation(fields: [listId], references: [id], onDelete: SetNull)
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sku           String        @unique
+  description   String?
+  quantity      Int           @default(0)
+  unitPrice     Float
   purchasePrice Float
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@index([sku])
   @@index([listId])
+  @@index([userId])
   @@map("hardwares")
   @@schema("hardware")
 }

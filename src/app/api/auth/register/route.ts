@@ -14,6 +14,9 @@ const registerSchema = z.object({
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   phone: z.string().optional(),
+  storeName: z.string().min(1),
+  storeLocation: z.string().min(1),
+  storeDescription: z.string().min(1).max(500),
 });
 
 export async function POST(request: NextRequest) {
@@ -21,7 +24,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Validate input
-    const { email, password, firstName, lastName, phone } = registerSchema.parse(body);
+    const { email, password, firstName, lastName, phone, storeName, storeLocation, storeDescription } = registerSchema.parse(body);
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -38,7 +41,7 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with optional store information
     const user = await prisma.user.create({
       data: {
         email,
@@ -46,6 +49,9 @@ export async function POST(request: NextRequest) {
         firstName,
         lastName,
         phone,
+        storeName: storeName ?? null,
+        storeLocation: storeLocation ?? null,
+        storeDescription: storeDescription ?? null,
       },
     });
 

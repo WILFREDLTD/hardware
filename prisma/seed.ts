@@ -1,4 +1,8 @@
 import bcrypt from 'bcryptjs';
+
+function generateId() {
+  return `seed-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+}
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
@@ -55,11 +59,86 @@ function getPackageConversion(category: string, baseUnit: string) {
   return { packageUnitLabel: undefined, packageSize: undefined };
 }
 
+async function createUser(input: { email: string; password: string; firstName: string; lastName: string; phone?: string; storeName?: string }) {
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email: input.email,
+        password: input.password,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        phone: input.phone,
+        storeName: input.storeName,
+      },
+    })
+    console.log(`Created user: ${user.email}`)
+    return user
+  } catch (err: any) {
+    const isMissingColumn = err?.code === 'P2022' && err?.meta?.column;
+    if (isMissingColumn) {
+      console.warn('Prisma client error creating user (missing column), falling back to raw INSERT:', err.meta?.column);
+
+      const cols: Array<{ column_name: string; is_nullable: string; column_default: string | null; data_type: string }> = await prisma.$queryRawUnsafe(
+        `SELECT column_name, is_nullable, column_default, data_type
+         FROM information_schema.columns
+         WHERE table_schema = 'hardware' AND table_name = 'users'`
+      );
+
+      const colNames = cols.map(c => c.column_name);
+      const insertCols: string[] = [];
+      const values: any[] = [];
+
+      const push = (name: string, val: any) => {
+        insertCols.push(name);
+        values.push(val);
+      };
+
+      if (colNames.includes('id')) push('id', generateId());
+      if (colNames.includes('email')) push('email', input.email);
+      if (colNames.includes('password')) push('password', input.password);
+      if (colNames.includes('firstName')) push('"firstName"', input.firstName);
+      if (colNames.includes('lastName')) push('"lastName"', input.lastName);
+      if (colNames.includes('phone')) push('phone', input.phone ?? null);
+      if (colNames.includes('storeName')) push('"storeName"', input.storeName ?? 'My Hardware Store');
+      if (colNames.includes('storeLocation')) push('"storeLocation"', null);
+      if (colNames.includes('storeDescription')) push('"storeDescription"', null);
+      if (colNames.includes('autoLockTimeoutMinutes')) push('"autoLockTimeoutMinutes"', 1);
+      if (colNames.includes('createdAt')) push('"createdAt"', new Date());
+
+      for (const c of cols) {
+        const already = insertCols.includes(c.column_name) || insertCols.includes(`"${c.column_name}"`);
+        const hasDefault = c.column_default !== null;
+        if (!already && c.is_nullable === 'NO' && !hasDefault) {
+          let fallback: any = null;
+          if (c.data_type.includes('char') || c.data_type === 'text' || c.data_type === 'varchar') fallback = '';
+          else if (c.data_type.includes('int') || c.data_type === 'numeric' || c.data_type === 'double') fallback = 0;
+          else if (c.data_type.includes('timestamp') || c.data_type === 'date') fallback = new Date();
+          else if (c.data_type === 'boolean') fallback = false;
+          else fallback = '';
+          push(`"${c.column_name}"`, fallback);
+        }
+      }
+
+      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+      const sql = `INSERT INTO "hardware"."users" (${insertCols.join(', ')}) VALUES (${placeholders})`;
+      await prisma.$executeRawUnsafe(sql, ...values);
+      console.log(`Created user (raw INSERT): ${input.email}`);
+
+      const insertedUser = await prisma.user.findUnique({ where: { email: input.email } });
+      if (!insertedUser) {
+        throw new Error(`Unable to load created user ${input.email}`);
+      }
+      return insertedUser;
+    }
+
+    throw err;
+  }
+}
+
 async function main() {
   console.log('Seeding database (TypeScript)...')
 
   await prisma.$transaction([
-    prisma.user.deleteMany(),
     prisma.debtPayment.deleteMany(),
     prisma.debt.deleteMany(),
     prisma.saleItem.deleteMany(),
@@ -68,19 +147,30 @@ async function main() {
     prisma.product.deleteMany(),
     prisma.hardware.deleteMany(),
     prisma.hardwareList.deleteMany(),
+    prisma.user.deleteMany(),
   ])
 
-  const demoPassword = await bcrypt.hash('123456', 10);
-  await prisma.user.create({
-    data: {
-      email: 'demo@hardware.com',
-      password: demoPassword,
-      firstName: 'Store',
-      lastName: 'Owner',
-      phone: '0712345678',
-    },
+  const demoPasswordPlain = generateId();
+  const demoPassword = await bcrypt.hash(demoPasswordPlain, 10);
+  const demoUser = await createUser({
+    email: 'demo@hardware.com',
+    password: demoPassword,
+    firstName: 'Store',
+    lastName: 'Owner',
+    phone: '0712345678',
+    storeName: 'My Hardware Store',
   });
-  console.log('Created demo user: demo@hardware.com / 123456');
+
+  const secondPasswordPlain = generateId();
+  const secondPassword = await bcrypt.hash(secondPasswordPlain, 10);
+  const secondUser = await createUser({
+    email: 'branch@hardware.com',
+    password: secondPassword,
+    firstName: 'Branch',
+    lastName: 'Manager',
+    phone: '0722345678',
+    storeName: 'Branch Hardware Store',
+  });
 
   // Create 20 sample Products with realistic Kenyan hardware names
   const productDefinitions = [
@@ -115,10 +205,12 @@ async function main() {
     const packageInfo = getPackageConversion(def.category, baseUnit)
     const supplier = SUPPLIER_OPTIONS[i % SUPPLIER_OPTIONS.length]
     const nickname = PRODUCT_NICKNAMES[i] || `${def.skuBase.toLowerCase()}-${i + 1}`
+    const ownerId = i % 2 === 0 ? demoUser.id : secondUser.id
     const p = await prisma.product.create({
       data: {
         name: def.name,
         category: def.category,
+        userId: ownerId,
         nickname,
         currentStock: randInt(10, 200),
         minStockLevel: randInt(5, 15),
@@ -138,17 +230,18 @@ async function main() {
   // Create 5 HardwareLists and 20 Hardwares with realistic item names
   const lists = [] as any[]
   const listDefinitions = [
-    { name: 'Hand Tools', description: 'Manual tools for general repair and maintenance' },
-    { name: 'Electrical Supplies', description: 'Wiring, switches, and lighting accessories' },
-    { name: 'Plumbing Fixtures', description: 'Pipes, fittings, and plumbing installation parts' },
-    { name: 'Paint & Finishes', description: 'Paints, brushes, and surface finishing supplies' },
-    { name: 'Safety & PPE', description: 'Protective equipment for construction workers' },
+    { name: 'Hand Tools', description: 'Manual tools for general repair and maintenance', ownerId: demoUser.id },
+    { name: 'Electrical Supplies', description: 'Wiring, switches, and lighting accessories', ownerId: demoUser.id },
+    { name: 'Plumbing Fixtures', description: 'Pipes, fittings, and plumbing installation parts', ownerId: secondUser.id },
+    { name: 'Paint & Finishes', description: 'Paints, brushes, and surface finishing supplies', ownerId: secondUser.id },
+    { name: 'Safety & PPE', description: 'Protective equipment for construction workers', ownerId: demoUser.id },
   ]
   for (const def of listDefinitions) {
     const list = await prisma.hardwareList.create({
       data: {
         name: def.name,
         description: def.description,
+        userId: def.ownerId,
       },
     })
     lists.push(list)
@@ -183,10 +276,12 @@ async function main() {
     const def = hardwareDefinitions[i]
     const unitPrice = randInt(150, 12000)
     const purchasePrice = parseFloat((unitPrice * (0.45 + Math.random() * 0.35)).toFixed(2))
+    const ownerId = list.userId ?? (i % 2 === 0 ? demoUser.id : secondUser.id)
     const h = await prisma.hardware.create({
       data: {
         name: def.name,
         listId: list.id,
+        userId: ownerId,
         sku: `${def.skuBase}-${i + 1}`,
         description: `Premium ${def.name.toLowerCase()} for hardware and construction work`,
         quantity: randInt(5, 150),

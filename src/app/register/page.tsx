@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Input, Textarea } from '@/components/ui/Input';
 import Toast from '@/components/ui/Toast';
 import Link from 'next/link';
 import { validatePasswordRequirements, isPasswordValid } from '@/lib/passwordValidator';
@@ -19,6 +19,9 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
   });
+  const [storeName, setStoreName] = useState('');
+  const [storeLocation, setStoreLocation] = useState('');
+  const [storeDescription, setStoreDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -50,6 +53,12 @@ export default function RegisterPage() {
       return;
     }
 
+    // Ensure store info is provided
+    if (!storeName.trim() || !storeLocation.trim() || !storeDescription.trim()) {
+      setError('Store name, location and description are required');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -57,12 +66,15 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          password: formData.password,
-        }),
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            password: formData.password,
+            storeName,
+            storeLocation,
+            storeDescription,
+          }),
       });
 
       if (response.ok) {
@@ -106,7 +118,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-xl">
         <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
           Hardware Store
         </h1>
@@ -137,116 +149,118 @@ export default function RegisterPage() {
               }
             />
           </div>
-          <Input
-            label="Email"
-            type="email"
-            required
-            value={formData.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
-          />
-          <Input
-            label="Phone"
-            value={formData.phone}
-            onChange={(e) =>
-              setFormData({ ...formData, phone: e.target.value })
-            }
-          />
-          <Input
-            label="Password"
-            type="password"
-            required
-            value={formData.password}
-            onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })
-            }
-            onFocus={() => setPasswordFieldFocused(true)}
-            onBlur={() => setPasswordFieldFocused(false)}
-          />
-          
-          {/* Password Requirements - Only show when focused */}
-          {passwordFieldFocused && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Email"
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+            />
+            <Input
+              label="Phone"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+            />
+          </div>
+        
+        {/* Store info instead of initial hardware */}
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-sm font-semibold text-gray-700 mb-3">Store information</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input required label="Store Name" value={storeName} onChange={(e) => setStoreName(e.target.value)} />
+            <Input required label="Store Location" value={storeLocation} onChange={(e) => setStoreLocation(e.target.value)} />
+          </div>
+          <div className="mt-3">
+            <Textarea
+              required
+              label="Store Description"
+              value={storeDescription}
+              onChange={(e) => setStoreDescription(e.target.value)}
+              maxLength={500}
+              rows={5}
+            />
+            <p className="text-xs text-slate-400 text-right mt-1">{storeDescription.length}/500</p>
+          </div>
+        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Password"
+              type="password"
+              required
+              value={formData.password}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
+              onFocus={() => setPasswordFieldFocused(true)}
+              onBlur={() => setPasswordFieldFocused(false)}
+            />
+            <Input
+              label="Confirm Password"
+              type="password"
+              required
+              value={formData.confirmPassword}
+              onChange={(e) =>
+                setFormData({ ...formData, confirmPassword: e.target.value })
+              }
+            />
+          </div>
+
+          {/* Password Requirements - show when focused or after attempted submit */}
+          {(passwordFieldFocused || showAttemptedSubmit) && (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-sm font-semibold text-gray-700 mb-3">Password Requirements:</p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className={`text-lg font-bold ${
-                    passwordRequirements.minLength 
-                      ? 'text-green-600' 
-                      : showAttemptedSubmit ? 'text-red-600' : 'text-gray-300'
-                  }`}>
-                    ✓
-                  </span>
-                  <span className={
-                    passwordRequirements.minLength 
-                      ? 'text-green-600 font-medium' 
-                      : showAttemptedSubmit ? 'text-red-600 font-medium' : 'text-gray-500'
-                  }>
-                    At least 6 characters
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-lg font-bold ${
-                    passwordRequirements.hasUppercase 
-                      ? 'text-green-600' 
-                      : showAttemptedSubmit ? 'text-red-600' : 'text-gray-300'
-                  }`}>
-                    ✓
-                  </span>
-                  <span className={
-                    passwordRequirements.hasUppercase 
-                      ? 'text-green-600 font-medium' 
-                      : showAttemptedSubmit ? 'text-red-600 font-medium' : 'text-gray-500'
-                  }>
-                    One uppercase letter
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-lg font-bold ${
-                    passwordRequirements.hasNumber 
-                      ? 'text-green-600' 
-                      : showAttemptedSubmit ? 'text-red-600' : 'text-gray-300'
-                  }`}>
-                    ✓
-                  </span>
-                  <span className={
-                    passwordRequirements.hasNumber 
-                      ? 'text-green-600 font-medium' 
-                      : showAttemptedSubmit ? 'text-red-600 font-medium' : 'text-gray-500'
-                  }>
-                    One number
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-lg font-bold ${
-                    passwordRequirements.hasPunctuation 
-                      ? 'text-green-600' 
-                      : showAttemptedSubmit ? 'text-red-600' : 'text-gray-300'
-                  }`}>
-                    ✓
-                  </span>
-                  <span className={
-                    passwordRequirements.hasPunctuation 
-                      ? 'text-green-600 font-medium' 
-                      : showAttemptedSubmit ? 'text-red-600 font-medium' : 'text-gray-500'
-                  }>
-                    One punctuation mark (!@#$%^&*etc.)
-                  </span>
-                </div>
+                {[
+                  {
+                    label: 'At least 6 characters',
+                    met: passwordRequirements.minLength,
+                  },
+                  {
+                    label: 'One uppercase letter',
+                    met: passwordRequirements.hasUppercase,
+                  },
+                  {
+                    label: 'One number',
+                    met: passwordRequirements.hasNumber,
+                  },
+                  {
+                    label: 'One punctuation mark (!@#$%^&*etc.)',
+                    met: passwordRequirements.hasPunctuation,
+                  },
+                ].map((requirement) => (
+                  <div key={requirement.label} className="flex items-center gap-2">
+                    <span
+                      className={`text-lg font-bold ${
+                        requirement.met
+                          ? 'text-green-600'
+                          : showAttemptedSubmit
+                          ? 'text-red-600'
+                          : 'text-gray-300'
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    <span
+                      className={
+                        requirement.met
+                          ? 'text-green-600 font-medium'
+                          : showAttemptedSubmit
+                          ? 'text-red-600 font-medium'
+                          : 'text-slate-500'
+                      }
+                    >
+                      {requirement.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
-
-          <Input
-            label="Confirm Password"
-            type="password"
-            required
-            value={formData.confirmPassword}
-            onChange={(e) =>
-              setFormData({ ...formData, confirmPassword: e.target.value })
-            }
-          />
 
           <Button
             type="submit"

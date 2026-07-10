@@ -41,6 +41,7 @@ const navigationSections: NavSection[] = [
 export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
   const [inventoryCount, setInventoryCount] = useState<number | null>(null);
   const [debtsCount, setDebtsCount] = useState<number | null>(null);
+  const [hardwareLists, setHardwareLists] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -65,7 +66,20 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
       }
     };
 
+    const fetchLists = async () => {
+      try {
+        const res = await fetch('/api/hardware-lists');
+        if (res.ok) {
+          const data = await res.json();
+          setHardwareLists(Array.isArray(data) ? data.map((d: any) => ({ id: d.id, name: d.name })) : []);
+        }
+      } catch {
+        setHardwareLists([]);
+      }
+    };
+
     fetchCounts();
+    fetchLists();
 
     const handleDebtsUpdated = () => {
       fetchCounts();
@@ -132,6 +146,13 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
         >
           Management System
         </p>
+        {hardwareLists.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {hardwareLists.map((l) => (
+              <span key={l.id} className="text-xs px-2 py-1 bg-emerald-800/60 rounded-md">{l.name}</span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Nav */}

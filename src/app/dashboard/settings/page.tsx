@@ -28,14 +28,22 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
+    if (status === 'loading') {
+      return;
+    }
+
     if (status === 'unauthenticated') {
       router.push('/login');
       return;
     }
 
+    const controller = new AbortController();
+
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/user/profile');
+        const response = await fetch('/api/user/profile', {
+          signal: controller.signal,
+        });
         if (!response.ok) throw new Error('Failed to fetch profile');
         const data = await response.json();
         setUserData({
@@ -51,13 +59,17 @@ export default function SettingsPage() {
           autoLockTimeoutMinutes: data.autoLockTimeoutMinutes ?? 1,
         });
       } catch (err: any) {
-        setError(err.message);
+        if (err.name !== 'AbortError') {
+          setError(err.message);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
+
+    return () => controller.abort();
   }, [status, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {

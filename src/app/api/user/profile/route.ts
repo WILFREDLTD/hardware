@@ -18,45 +18,66 @@ const DEFAULT_USER_SETTINGS = {
   autoLockTimeoutMinutes: 1,
 };
 
+function isMissingColumnError(message: string) {
+  return (
+    message.includes('column "storeName" does not exist') ||
+    message.includes('column "storeLocation" does not exist') ||
+    message.includes('column "storeDescription" does not exist') ||
+    message.includes('column "autoLockTimeoutMinutes" does not exist') ||
+    message.includes('does not exist')
+  );
+}
+
 async function getUserSettings(email: string) {
+  const settings = {
+    storeName: DEFAULT_USER_SETTINGS.storeName,
+    storeLocation: DEFAULT_USER_SETTINGS.storeLocation,
+    storeDescription: DEFAULT_USER_SETTINGS.storeDescription,
+    autoLockTimeoutMinutes: DEFAULT_USER_SETTINGS.autoLockTimeoutMinutes,
+  };
+
   try {
-    const rows = await prisma.$queryRaw<
-      Array<{
-        storeName: string | null;
-        storeLocation: string | null;
-        storeDescription: string | null;
-        autoLockTimeoutMinutes: number | null;
-      }>
-    >`
-      SELECT "storeName", "storeLocation", "storeDescription", "autoLockTimeoutMinutes"
+    const storeRow = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        storeName: true,
+        storeLocation: true,
+        storeDescription: true,
+      },
+    });
+
+    if (storeRow) {
+      settings.storeName = storeRow.storeName ?? settings.storeName;
+      settings.storeLocation = storeRow.storeLocation ?? settings.storeLocation;
+      settings.storeDescription = storeRow.storeDescription ?? settings.storeDescription;
+    }
+  } catch (rawError: any) {
+    const message = String(rawError?.message || rawError);
+    if (!isMissingColumnError(message)) {
+      throw rawError;
+    }
+    return settings;
+  }
+
+  try {
+    const timeoutRows = await prisma.$queryRaw<Array<{ autoLockTimeoutMinutes: number | null }>>`
+      SELECT "autoLockTimeoutMinutes"
       FROM "hardware"."users"
       WHERE email = ${email}
       LIMIT 1
     `;
 
-    if (!rows?.length) {
-      return DEFAULT_USER_SETTINGS;
+    if (timeoutRows?.[0]?.autoLockTimeoutMinutes !== null && timeoutRows?.[0]?.autoLockTimeoutMinutes !== undefined) {
+      settings.autoLockTimeoutMinutes = timeoutRows[0].autoLockTimeoutMinutes;
     }
-
-    return {
-      storeName: rows[0].storeName ?? DEFAULT_USER_SETTINGS.storeName,
-      storeLocation: rows[0].storeLocation ?? DEFAULT_USER_SETTINGS.storeLocation,
-      storeDescription: rows[0].storeDescription ?? DEFAULT_USER_SETTINGS.storeDescription,
-      autoLockTimeoutMinutes: rows[0].autoLockTimeoutMinutes ?? DEFAULT_USER_SETTINGS.autoLockTimeoutMinutes,
-    };
   } catch (rawError: any) {
     const message = String(rawError?.message || rawError);
-    if (
-      message.includes('column "storeName" does not exist') ||
-      message.includes('column "storeLocation" does not exist') ||
-      message.includes('column "storeDescription" does not exist') ||
-      message.includes('column "autoLockTimeoutMinutes" does not exist') ||
-      message.includes('does not exist')
-    ) {
-      return DEFAULT_USER_SETTINGS;
+    if (!isMissingColumnError(message)) {
+      throw rawError;
     }
-    throw rawError;
   }
+
+  return settings;
 }
 
 export async function GET(_request: NextRequest) {
@@ -144,9 +165,11 @@ export async function PUT(request: NextRequest) {
       const message = String(dbError?.message || dbError);
       const shouldFallback =
         dbError.code === 'P2009' ||
+        dbError.code === 'P2010' ||
         message.includes('Unknown field') ||
         message.includes('Unknown argument') ||
-        message.includes('Unknown arg');
+        message.includes('Unknown arg') ||
+        isMissingColumnError(message);
 
       if (shouldFallback) {
         console.warn("Store fields not yet in database schema, but update acknowledged");
@@ -185,7 +208,7 @@ export async function PUT(request: NextRequest) {
           }
         } catch (rawError: any) {
           const rawMessage = String(rawError?.message || rawError);
-          if (!rawMessage.includes('column "storeName" does not exist') && !rawMessage.includes('column "storeLocation" does not exist') && !rawMessage.includes('column "storeDescription" does not exist') && !rawMessage.includes('column "autoLockTimeoutMinutes" does not exist')) {
+          if (!isMissingColumnError(rawMessage)) {
             throw rawError;
           }
         }

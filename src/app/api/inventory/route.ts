@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 async function createProductWithNicknameFallback(data: Prisma.ProductCreateInput) {
   try {
@@ -57,7 +59,13 @@ const productSchema = z.object({
 // GET - List all products
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const products = await prisma.product.findMany({
+      where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(products);
@@ -76,20 +84,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = productSchema.parse(body);
 
-      const product = await createProductWithNicknameFallback({
-        name: data.name,
-        category: data.category,
-        nickname: data.nickname?.trim() || null,
-        baseUnit: data.baseUnit,
-        packageUnitLabel: data.packageUnitLabel,
-        packageSize: data.packageSize,
-        supplierName: data.supplierName?.trim() || "unknown",
-        supplierNumber: data.supplierNumber?.trim() || "unknown",
-        currentStock: data.currentStock ?? 0,
-        minStockLevel: data.minStockLevel ?? 0,
-        unitPrice: data.unitPrice ?? 0,
-        purchasePrice: data.purchasePrice ?? 0,
-      });
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const product = await createProductWithNicknameFallback({
+      name: data.name,
+      category: data.category,
+      user: { connect: { id: session.user.id } },
+      nickname: data.nickname?.trim() || null,
+      baseUnit: data.baseUnit,
+      packageUnitLabel: data.packageUnitLabel,
+      packageSize: data.packageSize,
+      supplierName: data.supplierName?.trim() || "unknown",
+      supplierNumber: data.supplierNumber?.trim() || "unknown",
+      currentStock: data.currentStock ?? 0,
+      minStockLevel: data.minStockLevel ?? 0,
+      unitPrice: data.unitPrice ?? 0,
+      purchasePrice: data.purchasePrice ?? 0,
+    });
 
     return NextResponse.json(product, { status: 201 });
   } catch (error: any) {
@@ -160,6 +174,16 @@ export async function PUT(request: NextRequest) {
       ...(typeof validatedData.unitPrice !== 'undefined' && { unitPrice: validatedData.unitPrice }),
       ...(typeof validatedData.purchasePrice !== 'undefined' && { purchasePrice: validatedData.purchasePrice }),
     };
+
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const existing = await prisma.product.findUnique({ where: { id } });
+    if (!existing || existing.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
 
     const product = await updateProductWithNicknameFallback(id, updatePayload);
 
