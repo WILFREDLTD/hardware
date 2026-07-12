@@ -1,5 +1,5 @@
 'use client';
-import { useSession } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -28,7 +28,7 @@ function setSessionLastActivity() {
   window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ lastActivity: Date.now() }));
 }
 
-export default function DashboardLayout({
+function DashboardLayoutContent({
   children,
 }: {
   children: React.ReactNode;
@@ -139,6 +139,7 @@ export default function DashboardLayout({
     try {
       const response = await fetch('/api/auth/verify-password', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
@@ -230,5 +231,17 @@ export default function DashboardLayout({
         </div>
       )}
     </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <SessionProvider refetchInterval={0}>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </SessionProvider>
   );
 }

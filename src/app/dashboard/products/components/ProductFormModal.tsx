@@ -59,7 +59,15 @@ export function ProductFormModal({ isEditing, isSaving, formData, categories, ba
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Supplier Name" placeholder="unknown" value={formData.supplierName} onChange={(e) => onChange('supplierName', e.target.value)} />
-          <Input label="Supplier Number" placeholder="unknown" value={formData.supplierNumber} onChange={(e) => onChange('supplierNumber', e.target.value)} />
+          <Input
+            label="Supplier Number"
+            placeholder="10 or 12 digits"
+            value={formData.supplierNumber}
+            onChange={(e) => onChange('supplierNumber', e.target.value)}
+            inputMode="numeric"
+            pattern="^(?:\d{10}|\d{12})$"
+            maxLength={12}
+          />
         </div>
       </div>
     </Modal>

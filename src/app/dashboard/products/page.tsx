@@ -9,12 +9,12 @@ import { ProductSearchBar } from './components/ProductSearchBar';
 import { ProductStats } from './components/ProductStats';
 import { ProductTable } from './components/ProductTable';
 import { UnitModal } from './components/UnitModal';
-import { DEFAULT_CATEGORIES, UNIT_OPTIONS, type Product } from './components/types';
+import { type Product } from './components/types';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
-  const [baseUnits, setBaseUnits] = useState<string[]>(UNIT_OPTIONS);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [baseUnits, setBaseUnits] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [showNewUnitModal, setShowNewUnitModal] = useState(false);
@@ -28,7 +28,7 @@ export default function ProductsPage() {
     name: '',
     category: '',
     nickname: '',
-    baseUnit: 'kg',
+    baseUnit: '',
     packageUnitLabel: '',
     packageSize: 0,
     supplierName: '',
@@ -45,13 +45,12 @@ export default function ProductsPage() {
         const res = await fetch('/api/categories');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length) {
-            const merged = Array.from(new Set([...data, ...DEFAULT_CATEGORIES]));
-            setCategories(merged);
+          if (Array.isArray(data)) {
+            setCategories(data);
           }
         }
       } catch (err) {
-        // ignore and keep defaults
+        console.error('Failed to load categories:', err);
       }
     })();
   }, []);
@@ -61,7 +60,7 @@ export default function ProductsPage() {
       const res = await fetch('/api/base-units');
       if (res.ok) {
         const data = await res.json();
-        setBaseUnits(Array.isArray(data) ? data : UNIT_OPTIONS);
+        setBaseUnits(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error('Failed to load base units:', error);
@@ -85,7 +84,7 @@ export default function ProductsPage() {
       name: '',
       category: '',
       nickname: '',
-      baseUnit: 'kg',
+      baseUnit: baseUnits[0] ?? '',
       packageUnitLabel: '',
       packageSize: 0,
       supplierName: '',
@@ -122,7 +121,7 @@ export default function ProductsPage() {
       name: '',
       category: '',
       nickname: '',
-      baseUnit: 'kg',
+      baseUnit: baseUnits[0] ?? '',
       packageUnitLabel: '',
       packageSize: 0,
       supplierName: '',

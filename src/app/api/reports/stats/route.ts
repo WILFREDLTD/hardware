@@ -1,22 +1,46 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 // GET - Dashboard statistics
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
     // Fetch all data needed for calculations
-    const [sales, debts, products, saleItems] = await Promise.all([
-      prisma.sale.findMany({ where: { deletedAt: null } }),
-      prisma.debt.findMany(),
-      prisma.product.findMany(),
+    const [sales, debts, products, saleItems, hardwares, user] = await Promise.all([
+      prisma.sale.findMany({ where: { deletedAt: null, userId } }),
+      prisma.debt.findMany({ where: { userId } }),
+      prisma.product.findMany({ where: { userId } }),
       prisma.saleItem.findMany({
         include: {
           product: true,
+          sale: true,
         },
         where: {
           sale: {
             deletedAt: null,
+            userId,
           },
+        },
+      }),
+      prisma.hardware.findMany({
+        where: { userId },
+        include: { list: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          storeName: true,
+          storeLocation: true,
+          storeDescription: true,
         },
       }),
     ]);
@@ -44,6 +68,19 @@ export async function GET() {
     }, 0);
 
     const profit = totalRevenue - costOfGoodsSold;
+    const hardwareValue = (hardwares as any[]).reduce((sum: number, item: any) => sum + item.quantity * item.purchasePrice, 0);
+    const hardwareItems = (hardwares as any[]).map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      sku: item.sku,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      purchasePrice: item.purchasePrice,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      listName: item.list?.name || "Unassigned",
+      description: item.description,
+    }));
 
     return NextResponse.json({
       totalRevenue,
@@ -54,6 +91,12 @@ export async function GET() {
       profit,
       lowStockItems: lowStockItems.length,
       lowStockProducts: lowStockItems,
+      storeName: user?.storeName || "My Hardware Store",
+      storeLocation: user?.storeLocation || "",
+      storeDescription: user?.storeDescription || "",
+      hardwareCount: hardwareItems.length,
+      hardwareValue,
+      hardwareItems,
     });
   } catch (error) {
     console.error("/api/reports/stats GET error:", error);

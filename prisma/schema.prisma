@@ -26,9 +26,15 @@ model User {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  hardwareLists HardwareList[]
-  hardwares     Hardware[]
-  products      Product[]
+  hardwareLists         HardwareList[]
+  hardwares             Hardware[]
+  products              Product[]
+  categories            Category[]
+  sales                 Sale[]
+  debts                 Debt[]
+  debtPayments          DebtPayment[]
+  reports               Report[]
+  inventoryTransactions InventoryTransaction[]
 
   @@map("users")
   @@schema("hardware")
@@ -41,7 +47,7 @@ model Product {
   category         String
   userId           String
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nickname         String?  @unique
+  nickname         String?
   currentStock     Int      @default(0)
   minStockLevel    Int      @default(5)
   baseUnit         String   @default("pcs")
@@ -58,6 +64,8 @@ model Product {
   saleItems    SaleItem[]
   transactions InventoryTransaction[]
 
+  @@unique([userId, name])
+  @@unique([userId, nickname])
   @@index([category])
   @@index([userId])
   @@index([nickname])
@@ -68,16 +76,30 @@ model Product {
 // Categories for organizing products
 model Category {
   id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, name])
+  @@map("categories")
+  @@schema("hardware")
+}
+
+model BaseUnit {
+  id        String   @id @default(cuid())
   name      String   @unique
   createdAt DateTime @default(now())
 
-  @@map("categories")
+  @@map("base_units")
   @@schema("hardware")
 }
 
 // Inventory Transaction model - Track items in/out
 model InventoryTransaction {
   id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String
   product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   type      TransactionType
@@ -86,6 +108,7 @@ model InventoryTransaction {
   date      DateTime        @default(now())
   createdAt DateTime        @default(now())
 
+  @@index([userId])
   @@index([productId])
   @@index([date])
   @@map("inventory_transactions")
@@ -102,6 +125,8 @@ enum TransactionType {
 // Sale model - Record all sales
 model Sale {
   id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   saleDate          DateTime      @default(now())
   subtotalAmount    Float         @default(0)
   discountAmount    Float         @default(0)
@@ -123,6 +148,7 @@ model Sale {
 
   @@index([saleDate])
   @@index([paymentStatus])
+  @@index([userId])
   @@map("sales")
   @@schema("hardware")
 }
@@ -155,6 +181,8 @@ model SaleItem {
 // Debt model - Track credit/debt sales
 model Debt {
   id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   saleId      String?    @unique
   sale        Sale?      @relation(fields: [saleId], references: [id], onDelete: SetNull)
   debtorName  String
@@ -174,6 +202,7 @@ model Debt {
   @@index([status])
   @@index([date])
   @@index([debtorPhone])
+  @@index([userId])
   @@map("debts")
   @@schema("hardware")
 }
@@ -189,6 +218,8 @@ enum DebtStatus {
 // Debt Payment model - Track payments received on debts
 model DebtPayment {
   id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   debtId    String
   debt      Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
   amount    Float
@@ -196,6 +227,7 @@ model DebtPayment {
   notes     String?
   createdAt DateTime @default(now())
 
+  @@index([userId])
   @@index([debtId])
   @@index([date])
   @@map("debt_payments")
@@ -205,6 +237,8 @@ model DebtPayment {
 // Report model - Store generated reports
 model Report {
   id             String     @id @default(cuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   type           ReportType
   period         String
   totalRevenue   Float      @default(0)
@@ -216,6 +250,7 @@ model Report {
   data           Json?
   generatedAt    DateTime   @default(now())
 
+  @@index([userId])
   @@index([type])
   @@index([period])
   @@map("reports")
@@ -241,6 +276,7 @@ model HardwareList {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  @@unique([userId, name])
   @@index([userId])
   @@map("hardware_lists")
   @@schema("hardware")
@@ -254,7 +290,7 @@ model Hardware {
   list          HardwareList? @relation(fields: [listId], references: [id], onDelete: SetNull)
   userId        String
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sku           String        @unique
+  sku           String
   description   String?
   quantity      Int           @default(0)
   unitPrice     Float
@@ -262,7 +298,7 @@ model Hardware {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  @@index([sku])
+  @@unique([userId, sku])
   @@index([listId])
   @@index([userId])
   @@map("hardwares")

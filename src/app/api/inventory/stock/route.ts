@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -120,6 +122,11 @@ export async function DELETE(request: NextRequest) {
 // POST - Record inventory transaction
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { productId, type, quantity, packageCount, notes, date } = stockTransactionSchema.parse(body);
 
@@ -164,7 +171,8 @@ export async function POST(request: NextRequest) {
 
     const transaction = await prisma.inventoryTransaction.create({
       data: {
-        productId,
+        user: { connect: { id: session.user.id } },
+        product: { connect: { id: productId } },
         type,
         quantity: unitQuantity,
         notes,

@@ -10,11 +10,9 @@ interface CheckoutPanelProps {
   setCashPaid: (value: string) => void
   changeValue: number
   discountValue: number
-  isProcessing: boolean
-  cartLength: number
-  setShowCalc: (value: boolean) => void
+  isCheckoutDisabled: boolean
+  checkoutDisabledReason: string
   handleCashSale: () => Promise<void>
-  
 }
 
 export default function CheckoutPanel({
@@ -25,10 +23,9 @@ export default function CheckoutPanel({
   setCashPaid,
   changeValue,
   discountValue,
-  isProcessing,
-  cartLength,
   handleCashSale,
-  
+  isCheckoutDisabled,
+  checkoutDisabledReason,
 }: CheckoutPanelProps) {
   return (
     <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm">
@@ -42,11 +39,11 @@ export default function CheckoutPanel({
         regularSubtotal={regularSubtotal}
         changeValue={changeValue}
         discountValue={discountValue}
-        isProcessing={isProcessing}
-        cartLength={cartLength}
         cashPaid={cashPaid}
         setCashPaid={setCashPaid}
         handleCashSale={handleCashSale}
+        isCheckoutDisabled={isCheckoutDisabled}
+        checkoutDisabledReason={checkoutDisabledReason}
       />
     </div>
   )

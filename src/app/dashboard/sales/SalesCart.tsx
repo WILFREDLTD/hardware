@@ -1,4 +1,5 @@
 'use client'
+import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { formatKES } from '@/lib/utils'
 
@@ -46,6 +47,48 @@ export default function SalesCart({
   removeFromCart,
   handleCashSale,
 }: SalesCartProps) {
+  const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    setQuantityInputs((current) => {
+      const next: Record<string, string> = {}
+      cart.forEach((item) => {
+        next[item.productId] = current[item.productId] ?? String(item.quantity)
+      })
+      return next
+    })
+  }, [cart])
+
+  const handleQuantityChange = (idx: number, item: CartItem, value: string) => {
+    setQuantityInputs((current) => ({ ...current, [item.productId]: value }))
+    if (value === '') {
+      return
+    }
+    const parsed = parseInt(value, 10)
+    if (Number.isNaN(parsed)) {
+      return
+    }
+    const normalized = Math.max(1, Math.min(item.max, parsed))
+    updateQty(idx, normalized)
+    setQuantityInputs((current) => ({ ...current, [item.productId]: String(normalized) }))
+  }
+
+  const handleQuantityBlur = (item: CartItem) => {
+    const currentValue = quantityInputs[item.productId]
+    if (!currentValue || currentValue === '') {
+      setQuantityInputs((current) => ({ ...current, [item.productId]: String(item.quantity) }))
+      return
+    }
+    const parsed = parseInt(currentValue, 10)
+    if (Number.isNaN(parsed) || parsed < 1) {
+      setQuantityInputs((current) => ({ ...current, [item.productId]: String(item.quantity) }))
+      return
+    }
+    const normalized = Math.max(1, Math.min(item.max, parsed))
+    updateQty(cart.findIndex((cartItem) => cartItem.productId === item.productId), normalized)
+    setQuantityInputs((current) => ({ ...current, [item.productId]: String(normalized) }))
+  }
+
   return (
     <Card>
       <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Cart</div>
@@ -65,7 +108,16 @@ export default function SalesCart({
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => updateQty(idx, Math.max(1, it.quantity - 1))} className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-sm font-bold">−</button>
-                  <span className="w-8 text-center text-sm font-semibold">{it.quantity}</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={it.max}
+                    value={quantityInputs[it.productId] ?? String(it.quantity)}
+                    onChange={(e) => handleQuantityChange(idx, it, e.target.value)}
+                    onBlur={() => handleQuantityBlur(it)}
+                    className="w-16 text-center text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-100 [&::-webkit-outer-spin-button]:hidden [&::-webkit-inner-spin-button]:hidden"
+                    style={{ appearance: 'textfield' }}
+                  />
                   <button onClick={() => updateQty(idx, Math.min(it.max, it.quantity + 1))} className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-sm font-bold">+</button>
                 </div>
                 <div className="text-right">

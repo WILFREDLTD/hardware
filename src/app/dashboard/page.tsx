@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 import { formatKES } from '@/lib/utils';
+import { AUTO_LOCK_TIMEOUT_STORAGE_KEY, getStoredAutoLockTimeoutMinutes } from '@/lib/autoLock';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -37,9 +38,8 @@ export default function DashboardPage() {
   const firstName = (session?.user as any)?.firstName || session?.user?.name || 'there';
 
   useEffect(() => {
-    const current = typeof window !== 'undefined' ? window.localStorage.getItem('autoLockUptimeMinutes') : null;
-    if (current && /^[0-9]+$/.test(current)) {
-      setAutoLockMinutes(current);
+    if (typeof window !== 'undefined') {
+      setAutoLockMinutes(String(getStoredAutoLockTimeoutMinutes(window.localStorage)));
     }
 
     (async () => {
@@ -226,7 +226,7 @@ export default function DashboardPage() {
             return;
           }
 
-          window.localStorage.setItem('autoLockUptimeMinutes', String(minutes));
+          window.localStorage.setItem(AUTO_LOCK_TIMEOUT_STORAGE_KEY, String(minutes));
           window.dispatchEvent(new Event('autoLockConfigChanged'));
           setShowAutoLockModal(false);
         }} submitLabel="Save">

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -10,10 +12,16 @@ const debtSchema = z.object({
   notes: z.string().optional(),
 });
 
-// GET - List all debts
+// GET - List user debts
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const debts = await prisma.debt.findMany({
+      where: { userId: session.user.id },
       include: {
         payments: true,
       },
@@ -32,12 +40,18 @@ export async function GET() {
 // POST - Create new debt
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { debtorName, debtorPhone, amount, dueDate, notes } =
       debtSchema.parse(body);
 
     const debt = await prisma.debt.create({
       data: {
+        user: { connect: { id: session.user.id } },
         debtorName,
         debtorPhone,
         amount,

@@ -5,23 +5,22 @@ interface CheckoutSummaryProps {
   regularSubtotal: number
   changeValue: number
   discountValue: number
-  isProcessing: boolean
-  cartLength: number
   cashPaid: string
   setCashPaid: (value: string) => void
   handleCashSale: () => Promise<void>
-  
+  isCheckoutDisabled: boolean
+  checkoutDisabledReason: string
 }
 
 export default function CheckoutSummary({
   regularSubtotal,
   changeValue,
   discountValue,
-  isProcessing,
-  cartLength,
   cashPaid,
   setCashPaid,
   handleCashSale,
+  isCheckoutDisabled,
+  checkoutDisabledReason,
 }: CheckoutSummaryProps) {
   return (
     <>
@@ -138,7 +137,8 @@ export default function CheckoutSummary({
         <button
           type="button"
           onClick={handleCashSale}
-          disabled={cartLength === 0 || isProcessing}
+          disabled={isCheckoutDisabled}
+          title={isCheckoutDisabled ? checkoutDisabledReason : undefined}
           className="w-full rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
           style={{
             backgroundColor: changeValue < 0 ? '#dc2626' : '#047857',

@@ -41,6 +41,14 @@ async function updateProductWithNicknameFallback(id: string, data: Prisma.Produc
   }
 }
 
+const supplierNumberSchema = z.preprocess((value) => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed === '' ? undefined : trimmed;
+  }
+  return value;
+}, z.string().regex(/^(?:\d{10}|\d{12})$/, 'Supplier number must be exactly 10 or 12 digits').optional());
+
 const productSchema = z.object({
   name: z.string().min(1),
   category: z.string().min(1),
@@ -53,7 +61,7 @@ const productSchema = z.object({
   packageUnitLabel: z.string().optional(),
   packageSize: z.number().int().nonnegative().optional(),
   supplierName: z.string().optional(),
-  supplierNumber: z.string().optional(),
+  supplierNumber: supplierNumberSchema,
 });
 
 // GET - List all products
@@ -155,7 +163,7 @@ export async function PUT(request: NextRequest) {
       packageUnitLabel: z.string().optional(),
       packageSize: z.number().int().nonnegative().optional(),
       supplierName: z.string().optional(),
-      supplierNumber: z.string().optional(),
+      supplierNumber: supplierNumberSchema,
     });
 
     const validatedData = updateSchema.parse(updateData);
