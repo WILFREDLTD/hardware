@@ -153,7 +153,7 @@ export default function Home() {
         </div>
 
         {/* Nav links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           {['Features',  'FAQ'].map(link => (
             <a key={link} href={`#${link.toLowerCase().replace(' ', '-')}`} style={{
               fontSize: '14px', fontWeight: 500, color: '#475569', textDecoration: 'none',
@@ -164,7 +164,26 @@ export default function Home() {
             >{link}</a>
           ))}
           <button
-            onClick={openDashboard}
+            onClick={() => router.push('/login')}
+            style={{
+              background: 'transparent', color: '#065f46',
+              border: '1px solid #cbd5e1', borderRadius: '100px',
+              padding: '10px 22px', fontSize: '14px', fontWeight: 600,
+              cursor: 'pointer', transition: 'background .2s, color .2s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.color = '#064e3b';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#065f46';
+            }}
+          >
+            Login
+          </button>
+          <button
+            onClick={() => router.push('/register')}
             style={{
               background: '#065f46', color: '#fff',
               border: 'none', borderRadius: '100px',
@@ -174,7 +193,7 @@ export default function Home() {
             onMouseEnter={e => (e.currentTarget.style.background = '#047857')}
             onMouseLeave={e => (e.currentTarget.style.background = '#065f46')}
           >
-            Open Dashboard
+            Register
           </button>
         </div>
       </nav>
