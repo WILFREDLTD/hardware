@@ -1,4 +1,5 @@
 'use client'
+import { useEffect, useState } from 'react'
 import { formatKES } from '@/lib/utils'
 
 type CartItem = {
@@ -13,9 +14,67 @@ interface CartItemsProps {
   cart: CartItem[]
   updateQty: (index: number, qty: number) => void
   removeFromCart: (idx: number) => void
+  setCartValidity: (isValid: boolean) => void
 }
 
-export default function CartItems({ cart, updateQty, removeFromCart }: CartItemsProps) {
+export default function CartItems({ cart, updateQty, removeFromCart, setCartValidity }: CartItemsProps) {
+  const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    setQuantityInputs((current) => {
+      const next: Record<string, string> = {}
+      cart.forEach((item) => {
+        next[item.productId] = current[item.productId] ?? String(item.quantity)
+      })
+      return next
+    })
+  }, [cart])
+
+  useEffect(() => {
+    const hasInvalid = cart.some((item) => {
+      const value = quantityInputs[item.productId]
+      if (!value || value.trim() === '') return false
+      if (!/^\d+$/.test(value)) return true
+      const parsed = parseInt(value, 10)
+      return parsed < 1 || parsed > item.max
+    })
+
+    setCartValidity(!hasInvalid)
+  }, [cart, quantityInputs, setCartValidity])
+
+  const handleQuantityChange = (idx: number, item: CartItem, value: string) => {
+    setQuantityInputs((current) => ({ ...current, [item.productId]: value }))
+    if (value === '') {
+      return
+    }
+
+    const parsed = parseInt(value, 10)
+    if (Number.isNaN(parsed) || parsed < 1) {
+      setCartValidity(false)
+      return
+    }
+
+    setCartValidity(true)
+    const normalized = Math.min(item.max, parsed)
+    updateQty(idx, normalized)
+    setQuantityInputs((current) => ({ ...current, [item.productId]: String(normalized) }))
+  }
+
+  const handleQuantityBlur = (item: CartItem) => {
+    const currentValue = (quantityInputs[item.productId] ?? '').trim()
+    const parsed = parseInt(currentValue, 10)
+
+    if (!currentValue || Number.isNaN(parsed) || parsed < 1) {
+      updateQty(cart.findIndex((cartItem) => cartItem.productId === item.productId), 1)
+      setQuantityInputs((current) => ({ ...current, [item.productId]: '1' }))
+      return
+    }
+
+    const normalized = Math.min(item.max, parsed)
+    updateQty(cart.findIndex((cartItem) => cartItem.productId === item.productId), normalized)
+    setQuantityInputs((current) => ({ ...current, [item.productId]: String(normalized) }))
+  }
+
   return (
     <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm">
       <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Cart</div>
@@ -38,12 +97,10 @@ export default function CartItems({ cart, updateQty, removeFromCart }: CartItems
                   type="number"
                   min="1"
                   max={item.max}
-                  value={item.quantity}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 1
-                    updateQty(idx, Math.max(1, Math.min(item.max, val)))
-                  }}
-                  className="w-12 text-center text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-100 [&::-webkit-outer-spin-button]:hidden [&::-webkit-inner-spin-button]:hidden"
+                  value={quantityInputs[item.productId] ?? String(item.quantity)}
+                  onChange={(e) => handleQuantityChange(idx, item, e.target.value)}
+                  onBlur={() => handleQuantityBlur(item)}
+                  className="w-16 text-center text-sm font-semibold border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-100 [&::-webkit-outer-spin-button]:hidden [&::-webkit-inner-spin-button]:hidden"
                   style={{ appearance: 'textfield' }}
                 />
                 <button onClick={() => updateQty(idx, Math.min(item.max, item.quantity + 1))} className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-sm font-bold">+</button>

@@ -1,20 +1,14 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  getAutoLockTimeoutMs,
+  getStoredAutoLockTimeoutMinutes,
+  resolveAutoLockTimeoutMinutes,
+} from '@/lib/autoLock';
 
 const SESSION_KEY = 'hardwareStoreSession';
 const LOCK_KEY = 'dashboardLocked';
-const DEFAULT_INACTIVITY_TIMEOUT = 60 * 1000;
-
-function getAutoLockTimeout() {
-  if (typeof window === 'undefined') return DEFAULT_INACTIVITY_TIMEOUT;
-  const saved = window.localStorage.getItem('autoLockUptimeMinutes');
-  if (!saved) return DEFAULT_INACTIVITY_TIMEOUT;
-  const minutes = parseInt(saved, 10);
-  if (Number.isNaN(minutes) || minutes < 1) return DEFAULT_INACTIVITY_TIMEOUT;
-  return minutes * 60 * 1000;
-}
 
 function getSession() {
   if (typeof window === 'undefined') return null;
@@ -33,10 +27,11 @@ function setSessionLastActivity() {
 }
 
 export default function AutoLock({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const [timeoutMinutes, setTimeoutMinutes] = useState<number | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const pathname = window.location.pathname;
     if (pathname === '/') return;
 
     let timeoutId: number | null = null;
@@ -57,42 +52,61 @@ export default function AutoLock({ children }: { children: React.ReactNode }) {
 
     const isLocked = () => window.localStorage.getItem(LOCK_KEY) === 'true';
 
-    const checkSession = () => {
+    const getCurrentTimeoutMs = () => {
+      // Get the configured auto-lock timeout in minutes (from settings)
+      // Convert to seconds, then to milliseconds for the timer
+      const minutes = timeoutMinutes ?? getStoredAutoLockTimeoutMinutes(window.localStorage);
+      return getAutoLockTimeoutMs(minutes);
+    };
+
+    const checkSessionTimeout = () => {
       const session = getSession();
-      if (isLocked()) {
-        return false;
-      }
       if (!session) {
-        return false;
+        return false; // No session yet, timeout check not applicable
       }
-      if (Date.now() - session.lastActivity > getAutoLockTimeout()) {
+      if (Date.now() - session.lastActivity > getCurrentTimeoutMs()) {
         lockApp();
-        return false;
+        return true; // Session timed out
       }
-      setSessionLastActivity();
-      return true;
+      return false; // Session is valid
     };
 
     const startInactivityTimer = () => {
       clearTimer();
-      timeoutId = window.setTimeout(lockApp, getAutoLockTimeout());
+      // Reset activity timestamp and start fresh timer
+      setSessionLastActivity();
+      timeoutId = window.setTimeout(() => {
+        if (checkSessionTimeout()) {
+          lockApp();
+        }
+      }, getCurrentTimeoutMs());
     };
 
     const handleActivity = () => {
-      if (checkSession()) {
-        startInactivityTimer();
+      if (isLocked()) {
+        return;
       }
-    };
-
-    const handleConfigChange = () => {
-      if (checkSession()) {
-        startInactivityTimer();
-      }
-    };
-
-    if (checkSession()) {
+      // Update last activity and restart timer
       startInactivityTimer();
-    }
+    };
+
+    const handleConfigChange = async () => {
+      const minutes = await resolveAutoLockTimeoutMinutes(window.localStorage);
+      setTimeoutMinutes(minutes);
+      if (!isLocked()) {
+        startInactivityTimer();
+      }
+    };
+
+    const init = async () => {
+      const minutes = await resolveAutoLockTimeoutMinutes(window.localStorage);
+      setTimeoutMinutes(minutes);
+      // Initialize the session on app load
+      setSessionLastActivity();
+      startInactivityTimer();
+    };
+
+    void init();
 
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart'];
     events.forEach((event) => window.addEventListener(event, handleActivity));
@@ -103,7 +117,7 @@ export default function AutoLock({ children }: { children: React.ReactNode }) {
       events.forEach((event) => window.removeEventListener(event, handleActivity));
       window.removeEventListener('autoLockConfigChanged', handleConfigChange);
     };
-  }, [pathname]);
+  }, [timeoutMinutes]);
 
   return <>{children}</>;
 }

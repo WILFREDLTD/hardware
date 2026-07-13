@@ -12,6 +12,23 @@ interface Stats {
   debtsCollected: number;
   profit: number;
   lowStockItems: number;
+  storeName?: string;
+  storeLocation?: string;
+  storeDescription?: string;
+  hardwareCount?: number;
+  hardwareValue?: number;
+  hardwareItems?: Array<{
+    id: string;
+    name: string;
+    sku?: string;
+    quantity: number;
+    unitPrice: number;
+    purchasePrice: number;
+    createdAt: string;
+    updatedAt?: string;
+    listName?: string | null;
+    description?: string | null;
+  }>;
 }
 interface Sale {
   id: string;
@@ -414,8 +431,8 @@ export default function ReportsPage() {
         <div id="print-report" ref={printRef}>
           {/* Print header */}
           <div className="hidden print:block mb-6 pb-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-900">Business Report — {new Date().toLocaleDateString('en-KE', { dateStyle: 'long' })}</h1>
-            <p className="text-sm text-gray-500">Period: {dateRange === 'all' ? 'All time' : `Last ${dateRange}`}</p>
+            <h1 className="text-xl font-bold text-gray-900">Business Report — {stats?.storeName || 'My Hardware Store'}</h1>
+            <p className="text-sm text-gray-500">{stats?.storeLocation ? `${stats.storeLocation} • ` : ''}Period: {dateRange === 'all' ? 'All time' : `Last ${dateRange}`}</p>
           </div>
 
           {/* ═══ OVERVIEW ════════════════════════════════════════════════════ */}
@@ -455,6 +472,32 @@ export default function ReportsPage() {
                       <div className="text-xs text-gray-400 w-14 text-right">{data.qty} sold</div>
                     </div>
                   ))}
+                </div>
+              </Section>
+
+              <Section title="Hardware activity" subtitle={`${stats?.hardwareCount || 0} tracked items • ${stats?.storeName || 'Your store'}`}>
+                <div className="space-y-3">
+                  {(stats?.hardwareItems || []).slice(0, 6).map(item => (
+                    <div key={item.id} className="rounded-lg border border-gray-100 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900">{item.name}</div>
+                          <div className="text-xs text-gray-500 mt-1">{item.listName || 'Unassigned'} • SKU {item.sku || '—'}</div>
+                        </div>
+                        <div className="text-right text-xs text-gray-500">
+                          <div className="font-medium text-gray-700">{item.quantity} units</div>
+                          <div>Added {new Date(item.createdAt).toLocaleDateString('en-KE')}</div>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                        <span>Unit price: KES {formatKES(item.unitPrice)}</span>
+                        <span>Purchase: KES {formatKES(item.purchasePrice)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {!stats?.hardwareItems?.length && (
+                    <div className="text-sm text-gray-400 py-2">No hardware items recorded yet.</div>
+                  )}
                 </div>
               </Section>
             </div>

@@ -60,8 +60,7 @@ export function useSalesPage() {
   const [finalAmountInput, setFinalAmountInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [showCalc, setShowCalc] = useState(false)
-  const [supplierName, setSupplierName] = useState('unknown')
-  const [supplierNumber, setSupplierNumber] = useState('unknown')
+  const [hasInvalidCartQuantity, setHasInvalidCartQuantity] = useState(false)
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -85,8 +84,6 @@ export function useSalesPage() {
     if (cart.length === 0) {
       setCashPaid('')
       setFinalAmountInput('')
-      setSupplierName('unknown')
-      setSupplierNumber('unknown')
     }
   }, [cart.length])
 
@@ -146,8 +143,6 @@ export function useSalesPage() {
         subtotalAmount: regularSubtotal,
         discountAmount: discountValue,
         finalAmount,
-        supplierName: supplierName || 'unknown',
-        supplierNumber: supplierNumber || 'unknown',
         notes: effectiveNotes,
       }
 
@@ -167,8 +162,6 @@ export function useSalesPage() {
       setToastOpen(true)
       setCashPaid('')
       setFinalAmountInput('')
-      setSupplierName('unknown')
-      setSupplierNumber('unknown')
       closeDebtModal()
       refreshSales()
       refreshProducts()
@@ -186,9 +179,18 @@ export function useSalesPage() {
     }
   }
 
+  const isCheckoutDisabled = cart.length === 0 || isProcessing || hasInvalidCartQuantity
+  const checkoutDisabledReason = cart.length === 0
+    ? 'Add one or more items to the cart before recording a sale.'
+    : isProcessing
+      ? 'A sale is being processed. Please wait.'
+      : hasInvalidCartQuantity
+        ? 'Fix invalid cart quantities before recording a sale.'
+        : ''
+
   async function handleCashSale() {
     const paid = parseFloat(cashPaid) || 0
-    if (cart.length === 0) return
+    if (cart.length === 0 || hasInvalidCartQuantity) return
 
     if (paid >= total) {
       await submitSale({ paymentMethod: 'CASH', paidAmount: paid, notes: `Cash payment, paid amount KES ${paid.toFixed(2)}` })
@@ -354,12 +356,12 @@ export function useSalesPage() {
     setDebtModalError,
     pendingSalePayloadDebtSubmit,
     closeDebtModal,
+    hasInvalidCartQuantity,
+    setHasInvalidCartQuantity,
+    isCheckoutDisabled,
+    checkoutDisabledReason,
     income,
     sales,
-    supplierName,
-    setSupplierName,
-    supplierNumber,
-    setSupplierNumber,
   }
 }
 

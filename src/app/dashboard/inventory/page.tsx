@@ -17,6 +17,7 @@ export default function InventoryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [showInventoryPanel, setShowInventoryPanel] = useState(false);
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [toast, setToast] = useState({
     open: false,
     title: '',
@@ -30,6 +31,9 @@ export default function InventoryPage() {
     purchasePrice: 0,
     adjustMode: 'units' as 'units' | 'packages',
     adjustQuantity: 0,
+    movementCategory: 'ADD' as 'ADD' | 'REMOVE' | 'CORRECTION',
+    correctionDirection: 'IN' as 'IN' | 'OUT',
+    reason: 'New Purchase',
   });
   const [latestTransactions, setLatestTransactions] = useState<InventoryTransaction[]>([]);
 
@@ -62,6 +66,9 @@ export default function InventoryPage() {
       purchasePrice: selectedProduct.purchasePrice,
       adjustMode: selectedProduct.packageSize ? 'packages' : 'units',
       adjustQuantity: 0,
+      movementCategory: 'ADD',
+      correctionDirection: 'IN',
+      reason: 'New Purchase',
     }));
   }, [selectedProduct?.id]);
 
@@ -119,26 +126,34 @@ export default function InventoryPage() {
     }
 
     const adjustUnits = adjustQty * packageUnits;
-    const nextStock = selectedProduct.currentStock + adjustUnits;
+    const isRemoval = formData.movementCategory === 'REMOVE' || (formData.movementCategory === 'CORRECTION' && formData.correctionDirection === 'OUT');
+    const stockDirection = isRemoval ? -1 : 1;
+    const nextStock = selectedProduct.currentStock + adjustUnits * stockDirection;
+    const transactionType = isRemoval ? 'OUT' : 'IN';
+    const notePrefix = formData.movementCategory === 'ADD' ? 'Add stock' : formData.movementCategory === 'REMOVE' ? 'Remove stock' : 'Stock correction';
+    const notes = `${notePrefix}${formData.reason ? ` — ${formData.reason}` : ''}`;
+    const shouldUpdateStock = adjustQty > 0;
 
     setSubmitting(true);
     try {
-      const transactionRes = await fetch('/api/inventory/stock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: formData.productId,
-          type: 'IN',
-          quantity: formData.adjustMode === 'units' ? adjustQty : undefined,
-          packageCount: formData.adjustMode === 'packages' ? adjustQty : undefined,
-          notes: 'Inventory addition',
-        }),
-      });
+      if (shouldUpdateStock) {
+        const transactionRes = await fetch('/api/inventory/stock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: formData.productId,
+            type: transactionType,
+            quantity: formData.adjustMode === 'units' ? adjustQty : undefined,
+            packageCount: formData.adjustMode === 'packages' ? adjustQty : undefined,
+            notes,
+          }),
+        });
 
-      if (!transactionRes.ok) {
-        const data = await transactionRes.json();
-        setToast({ open: true, title: 'Update failed', description: data?.error || 'Unable to record stock update.', variant: 'error' });
-        return;
+        if (!transactionRes.ok) {
+          const data = await transactionRes.json();
+          setToast({ open: true, title: 'Update failed', description: data?.error || 'Unable to record stock update.', variant: 'error' });
+          return;
+        }
       }
 
       const updateRes = await fetch('/api/inventory', {
@@ -156,7 +171,10 @@ export default function InventoryPage() {
         const data = await updateRes.json();
         setToast({ open: true, title: 'Update partially applied', description: data?.error || 'Stock change saved but metadata update failed.', variant: 'error' });
       } else {
-        setToast({ open: true, title: 'Inventory updated', description: `New stock is ${nextStock} ${selectedProduct.baseUnit}.`, variant: 'success' });
+        const toastMessage = shouldUpdateStock
+          ? `New stock is ${nextStock} ${selectedProduct.baseUnit}.`
+          : 'Pricing and thresholds updated successfully.';
+        setToast({ open: true, title: 'Inventory updated', description: toastMessage, variant: 'success' });
       }
 
       await fetchProducts();
@@ -204,6 +222,15 @@ export default function InventoryPage() {
       : Number(formData.adjustQuantity)
     : 0;
 
+  const stockPreviewCurrent = selectedProduct?.currentStock ?? 0;
+  const stockPreviewDelta = equivalentUnits * (formData.movementCategory === 'REMOVE' || (formData.movementCategory === 'CORRECTION' && formData.correctionDirection === 'OUT') ? -1 : 1);
+  const stockPreviewNext = stockPreviewCurrent + stockPreviewDelta;
+  const stockPreviewLabel = formData.movementCategory === 'REMOVE' ? 'Remove' : formData.movementCategory === 'CORRECTION' ? 'Correction' : 'Add';
+
+  const actionLabel = formData.adjustQuantity > 0
+    ? `${stockPreviewLabel} ${formData.adjustQuantity} ${formData.adjustMode === 'packages' ? selectedProduct?.packageUnitLabel || 'packages' : selectedProduct?.baseUnit || 'units'}`
+    : stockPreviewLabel;
+
   return (
     <div className="space-y-6">
       <Header title="Inventory" subtitle="Use an existing product definition, then assign stock levels, low thresholds, and pricing." />
@@ -220,6 +247,10 @@ export default function InventoryPage() {
           formData={formData}
           submitting={submitting}
           equivalentUnits={equivalentUnits}
+          stockPreviewCurrent={stockPreviewCurrent}
+          stockPreviewDelta={stockPreviewDelta}
+          stockPreviewNext={stockPreviewNext}
+          actionLabel={actionLabel}
           onFormChange={handleFormChange}
           onSubmit={handleSubmit}
           onCancel={() => {
@@ -231,6 +262,9 @@ export default function InventoryPage() {
               purchasePrice: 0,
               adjustMode: 'units',
               adjustQuantity: 0,
+              movementCategory: 'ADD',
+              correctionDirection: 'IN',
+              reason: 'New Purchase',
             });
           }}
           onRevertTransaction={handleRevertTransaction}
@@ -249,7 +283,67 @@ export default function InventoryPage() {
       {loading ? (
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-500">Loading inventory…</div>
       ) : (
-        <InventoryTable products={filtered} getStockStatus={getStockStatus} />
+        <InventoryTable products={filtered} getStockStatus={getStockStatus} onProductClick={(id) => {
+          setFormData((current) => ({ ...current, productId: id, adjustQuantity: 0 }));
+          setShowInventoryModal(true);
+        }} />
+      )}
+
+      {showInventoryModal && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setShowInventoryModal(false)} />
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 px-4">
+            <div className="w-full max-w-4xl">
+              <div className="bg-white rounded-2xl shadow-lg max-h-[90vh] overflow-y-auto">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white">
+                  <div>
+                    <h3 className="text-lg font-semibold">Update Inventory</h3>
+                    <p className="text-xs text-gray-500">Adjust stock and pricing for the selected product.</p>
+                  </div>
+                  <button onClick={() => setShowInventoryModal(false)} className="text-sm text-gray-500">Close</button>
+                </div>
+                <div className="p-4">
+                  <InventoryForm
+                    products={products}
+                    selectedProduct={selectedProduct}
+                    selectedStatus={selectedStatus}
+                    selectedProductBoxes={selectedProductBoxes}
+                    selectedProductRemainder={selectedProductRemainder}
+                    latestTransactions={latestTransactions}
+                    formData={formData}
+                    submitting={submitting}
+                    equivalentUnits={equivalentUnits}
+                    stockPreviewCurrent={stockPreviewCurrent}
+                    stockPreviewDelta={stockPreviewDelta}
+                    stockPreviewNext={stockPreviewNext}
+                    actionLabel={actionLabel}
+                    isModal
+                    onFormChange={handleFormChange}
+                    onSubmit={async (e) => {
+                      await handleSubmit(e as unknown as React.FormEvent);
+                      setShowInventoryModal(false);
+                    }}
+                    onCancel={() => {
+                      setShowInventoryModal(false);
+                      setFormData({
+                        productId: '',
+                        minStockLevel: 0,
+                        unitPrice: 0,
+                        purchasePrice: 0,
+                        adjustMode: 'units',
+                        adjustQuantity: 0,
+                        movementCategory: 'ADD',
+                        correctionDirection: 'IN',
+                        reason: 'New Purchase',
+                      });
+                    }}
+                    onRevertTransaction={handleRevertTransaction}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       <Toast

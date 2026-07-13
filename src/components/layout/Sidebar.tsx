@@ -41,6 +41,9 @@ const navigationSections: NavSection[] = [
 export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
   const [inventoryCount, setInventoryCount] = useState<number | null>(null);
   const [debtsCount, setDebtsCount] = useState<number | null>(null);
+  const [hardwareLists, setHardwareLists] = useState<Array<{ id: string; name: string }>>([]);
+  const [storeName, setStoreName] = useState('Hardware Stock');
+  const [storeLocation, setStoreLocation] = useState('');
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -65,7 +68,37 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
       }
     };
 
+    const fetchLists = async () => {
+      try {
+        const res = await fetch('/api/hardware-lists');
+        if (res.ok) {
+          const data = await res.json();
+          setHardwareLists(Array.isArray(data) ? data.map((d: any) => ({ id: d.id, name: d.name })) : []);
+        }
+      } catch {
+        setHardwareLists([]);
+      }
+    };
+
+    const fetchStoreProfile = async () => {
+      try {
+        const res = await fetch('/api/user/profile');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.storeName) {
+          setStoreName(data.storeName);
+        }
+        if (data.storeLocation) {
+          setStoreLocation(data.storeLocation);
+        }
+      } catch {
+        // keep defaults
+      }
+    };
+
     fetchCounts();
+    fetchLists();
+    fetchStoreProfile();
 
     const handleDebtsUpdated = () => {
       fetchCounts();
@@ -90,48 +123,47 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
           background: '#0f1a12',
         }}
       >
-        <p
-          style={{
-            fontFamily: "'Space Mono', monospace",
-            fontSize: '13px',
-            fontWeight: 700,
-            color: '#f0fdf4',
-            letterSpacing: '0.22em',
-            textTransform: 'uppercase',
-            lineHeight: 1,
-            margin: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          Hardware
-          <span
+        <div>
+          <p
             style={{
-              display: 'inline-block',
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: '#22c55e',
-              flexShrink: 0,
+              fontFamily: "'Space Mono', monospace",
+              fontSize: '13px',
+              fontWeight: 700,
+              color: '#f0fdf4',
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+              lineHeight: 1,
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
-          />
-          Stock
-        </p>
-        <p
-          style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: '10px',
-            fontWeight: 600,
-            color: '#4ade80',
-            letterSpacing: '0.20em',
-            textTransform: 'uppercase',
-            margin: '7px 0 0',
-            opacity: 0.7,
-          }}
-        >
-          Management System
-        </p>
+          >
+            {storeName}
+            <span
+              style={{
+                display: 'inline-block',
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                flexShrink: 0,
+              }}
+            />
+          </p>
+          {storeLocation ? (
+            <p className="text-sm font-semibold text-emerald-300 mt-2">
+              {storeLocation}
+            </p>
+          ) : null}
+        </div>
+        {hardwareLists.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {hardwareLists.map((l) => (
+              <span key={l.id} className="text-xs px-2 py-1 bg-emerald-800/60 rounded-md">{l.name}</span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Nav */}

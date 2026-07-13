@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+
+const supplierNumberSchema = z.preprocess((value) => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed === '' ? undefined : trimmed;
+  }
+  return value;
+}, z.string().regex(/^(?:\d{10}|\d{12})$/, 'Supplier number must be exactly 10 or 12 digits').optional());
 
 const saleUpdateSchema = z.object({
   paymentStatus: z.enum(["PAID", "DEBT"]).optional(),
   debtorName: z.string().optional(),
   debtorPhone: z.string().optional(),
   supplierName: z.string().optional(),
-  supplierNumber: z.string().optional(),
+  supplierNumber: supplierNumberSchema,
   items: z
     .array(
       z.object({
@@ -28,6 +38,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { paymentStatus, debtorName, debtorPhone } = saleUpdateSchema.parse(body);
@@ -44,7 +59,7 @@ export async function PATCH(
       },
     });
 
-    if (!sale || sale.deletedAt) {
+    if (!sale || sale.deletedAt || sale.userId !== session.user.id) {
       return NextResponse.json({ error: "Sale not found" }, { status: 404 });
     }
 
@@ -73,7 +88,8 @@ export async function PATCH(
           transactionOperations.push(
             prisma.inventoryTransaction.create({
               data: {
-                productId: currentItem.productId,
+                user: { connect: { id: session.user.id } },
+                product: { connect: { id: currentItem.productId } },
                 type: "IN",
                 quantity: currentItem.quantity,
                 notes: `Sale item removed: ${sale.id}`,
@@ -107,7 +123,8 @@ export async function PATCH(
             transactionOperations.push(
               prisma.inventoryTransaction.create({
                 data: {
-                  productId: currentItem.productId,
+                  user: { connect: { id: session.user.id } },
+                  product: { connect: { id: currentItem.productId } },
                   type: "OUT",
                   quantity: quantityDelta,
                   notes: `Sale item quantity increased: ${sale.id}`,
@@ -124,7 +141,8 @@ export async function PATCH(
             transactionOperations.push(
               prisma.inventoryTransaction.create({
                 data: {
-                  productId: currentItem.productId,
+                  user: { connect: { id: session.user.id } },
+                  product: { connect: { id: currentItem.productId } },
                   type: "IN",
                   quantity: Math.abs(quantityDelta),
                   notes: `Sale item quantity decreased: ${sale.id}`,
@@ -204,7 +222,8 @@ export async function PATCH(
           transactionOperations.push(
             prisma.debt.create({
               data: {
-                saleId: id,
+                user: { connect: { id: session.user.id } },
+                sale: { connect: { id } },
                 debtorName,
                 debtorPhone,
                 amount: updatedTotal,
@@ -253,6 +272,11 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -266,7 +290,7 @@ export async function DELETE(
       },
     });
 
-    if (!sale || sale.deletedAt) {
+    if (!sale || sale.deletedAt || sale.userId !== session.user.id) {
       return NextResponse.json({ error: "Sale not found" }, { status: 404 });
     }
 
@@ -292,7 +316,8 @@ export async function DELETE(
       tx.push(
         prisma.inventoryTransaction.create({
           data: {
-            productId: item.productId,
+            user: { connect: { id: session.user.id } },
+            product: { connect: { id: item.productId } },
             type: "IN",
             quantity: item.quantity,
             notes: `Sale deleted: ${sale.id}`,

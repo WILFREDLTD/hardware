@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import Toast from '@/components/ui/Toast';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -11,21 +13,50 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ email: 'wilfred@example.com', password: '123456' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // For now, demo login
-    if (formData.email && formData.password) {
+    try {
       if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
-        window.localStorage.setItem('dashboardLocked', 'false');
+        window.sessionStorage.clear();
+        window.localStorage.removeItem('dashboardLocked');
       }
-      setTimeout(() => {
+      await signOut({ redirect: false });
+
+      const result = await signIn('credentials', {
+        redirect: false,
+        email: formData.email,
+        password: formData.password,
+        callbackUrl: '/dashboard',
+      });
+
+      if (result?.error) {
+        setError('Wrong credentials');
+      } else if (result?.url) {
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
+          window.localStorage.setItem('dashboardLocked', 'false');
+        }
+        setShowSuccessToast(true);
+        router.push(result.url);
+      } else if (result?.ok) {
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.setItem('hardwareStoreSession', JSON.stringify({ lastActivity: Date.now() }));
+          window.localStorage.setItem('dashboardLocked', 'false');
+        }
+        setShowSuccessToast(true);
         router.push('/dashboard');
-      }, 500);
+      } else {
+        setError('Unable to sign in, please try again.');
+      }
+    } catch (err: any) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,7 +69,7 @@ export default function LoginPage() {
         <p className="text-center text-gray-600 mb-8">Management System</p>
 
         {error && (
-          <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700">
+          <div className="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700">
             {error}
           </div>
         )}
@@ -64,8 +95,6 @@ export default function LoginPage() {
             }
           />
 
-          <p className="text-sm text-gray-500">Password is <strong>123456</strong> for this demo test.</p>
-
           <Button
             type="submit"
             disabled={loading}
@@ -82,6 +111,14 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
+
+      <Toast
+        title="Welcome Back!"
+        description="You have been signed in successfully. Redirecting to dashboard..."
+        open={showSuccessToast}
+        variant="success"
+        onClose={() => setShowSuccessToast(false)}
+      />
     </div>
   );
 }

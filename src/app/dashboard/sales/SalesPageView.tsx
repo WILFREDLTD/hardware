@@ -61,12 +61,11 @@ export default function SalesPageView(props: SalesPageProps) {
     debtModalError,
     pendingSalePayloadDebtSubmit,
     closeDebtModal,
+    setHasInvalidCartQuantity,
+    isCheckoutDisabled,
+    checkoutDisabledReason,
     income,
     sales,
-    supplierName,
-    setSupplierName,
-    supplierNumber,
-    setSupplierNumber,
   } = props
 
   return (
@@ -84,7 +83,7 @@ export default function SalesPageView(props: SalesPageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-5">
           <ProductSearch query={query} suggestions={suggestions} setQuery={setQuery} addToCart={addToCart} />
-          <CartItems cart={cart} updateQty={updateQty} removeFromCart={removeFromCart} />
+          <CartItems cart={cart} updateQty={updateQty} removeFromCart={removeFromCart} setCartValidity={setHasInvalidCartQuantity} />
           <button
             onClick={() => setShowCalc(true)}
             className="w-full flex items-center gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-xl hover:border-gray-300 transition-all group"
@@ -109,14 +108,9 @@ export default function SalesPageView(props: SalesPageProps) {
             setCashPaid={setCashPaid}
             changeValue={changeValue}
             discountValue={discountValue}
-            isProcessing={isProcessing}
-            cartLength={cart.length}
-            setShowCalc={setShowCalc}
             handleCashSale={handleCashSale}
-            supplierName={supplierName}
-            setSupplierName={setSupplierName}
-            supplierNumber={supplierNumber}
-            setSupplierNumber={setSupplierNumber}
+            isCheckoutDisabled={isCheckoutDisabled}
+            checkoutDisabledReason={checkoutDisabledReason}
           />
         </div>
       </div>

@@ -36,7 +36,8 @@ export const authOptions = {
         return {
           id: user.id,
           email: user.email,
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           phone: user.phone,
         };
       },
@@ -50,12 +51,18 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        token.firstName = user.firstName;
+        token.lastName = user.lastName;
+        token.phone = user.phone;
       }
       return token;
     },
     async session({ session, token }: any) {
       if (session.user) {
         session.user.id = token.id;
+        session.user.firstName = token.firstName;
+        session.user.lastName = token.lastName;
+        session.user.phone = token.phone;
       }
       return session;
     },

@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 import { formatKES } from '@/lib/utils';
+import { AUTO_LOCK_TIMEOUT_STORAGE_KEY, resolveAutoLockTimeoutMinutes } from '@/lib/autoLock';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -19,7 +21,7 @@ interface DashboardStats {
 
 const quickActions = [
   { label: 'Configure Auto-lock', action: 'configureAutoLock', icon: '⏱️', color: '#1a6b45', desc: 'Set idle timeout before lock' },
-  { label: 'Add Product', href: '/dashboard/inventory', icon: '📦', color: '#2563eb', desc: 'Update your stock' },
+  { label: 'Settings', href: '/dashboard/settings', icon: '⚙️', color: '#2563eb', desc: 'Manage store and lock settings' },
   { label: 'Record Payment', href: '/dashboard/debts', icon: '💳', color: '#7c3aed', desc: 'Log debt repayment' },
 ]
 
@@ -30,14 +32,20 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAutoLockModal, setShowAutoLockModal] = useState(false);
   const [autoLockMinutes, setAutoLockMinutes] = useState('1');
-  const now = new Date()
-  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening'
+  const { data: session } = useSession();
+  const now = new Date();
+  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (session?.user as any)?.firstName || session?.user?.name || 'there';
 
   useEffect(() => {
-    const current = typeof window !== 'undefined' ? window.localStorage.getItem('autoLockUptimeMinutes') : null;
-    if (current && /^[0-9]+$/.test(current)) {
-      setAutoLockMinutes(current);
-    }
+    const loadAutoLockValue = async () => {
+      if (typeof window !== 'undefined') {
+        const minutes = await resolveAutoLockTimeoutMinutes(window.localStorage);
+        setAutoLockMinutes(String(minutes));
+      }
+    };
+
+    void loadAutoLockValue();
 
     (async () => {
       try {
@@ -66,12 +74,17 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <Header
-        title={`${greeting} `}
+        title={`${greeting}, ${firstName}`}
         subtitle="Here's what's happening at your store today"
         action={
-          <Link href="/dashboard/sales">
-            <Button>+ New Sale</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/dashboard/settings">
+              <Button className="bg-gray-200 text-gray-900 hover:bg-gray-300">⚙️ Settings</Button>
+            </Link>
+            <Link href="/dashboard/sales">
+              <Button>+ New Sale</Button>
+            </Link>
+          </div>
         }
       />
 
@@ -201,13 +214,24 @@ export default function DashboardPage() {
         </div>
       )}
       {showAutoLockModal && (
-        <Modal title="Configure Auto-lock" onClose={() => setShowAutoLockModal(false)} onSubmit={(e) => {
+        <Modal title="Configure Auto-lock" onClose={() => setShowAutoLockModal(false)} onSubmit={async (e) => {
           e.preventDefault();
           const minutes = parseInt(autoLockMinutes, 10);
           if (isNaN(minutes) || minutes < 1) {
             return;
           }
-          window.localStorage.setItem('autoLockUptimeMinutes', String(minutes));
+
+          const response = await fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ autoLockTimeoutMinutes: minutes }),
+          });
+
+          if (!response.ok) {
+            return;
+          }
+
+          window.localStorage.setItem(AUTO_LOCK_TIMEOUT_STORAGE_KEY, String(minutes));
           window.dispatchEvent(new Event('autoLockConfigChanged'));
           setShowAutoLockModal(false);
         }} submitLabel="Save">

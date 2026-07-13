@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
+const supplierNumberSchema = z.preprocess((value) => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed === '' ? undefined : trimmed;
+  }
+  return value;
+}, z.string().regex(/^(?:\d{10}|\d{12})$/, 'Supplier number must be exactly 10 or 12 digits').optional());
+
 const saleSchema = z.object({
   supplierName: z.string().optional(),
-  supplierNumber: z.string().optional(),
+  supplierNumber: supplierNumberSchema,
   items: z.array(
     z.object({
       productId: z.string(),
@@ -31,8 +41,13 @@ const saleSchema = z.object({
 // GET - List all sales
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const sales = await prisma.sale.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, userId: session.user.id },
       include: {
         saleItems: {
           include: {
@@ -59,6 +74,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { items, paymentStatus, paymentMethod, paidAmount, mobileNumber, notes, debtorName, debtorPhone, saleDate, subtotalAmount, discountAmount, finalAmount, supplierName, supplierNumber } =
       saleSchema.parse(body);
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Validate stock availability
     for (const item of items) {
@@ -97,6 +117,7 @@ export async function POST(request: NextRequest) {
     // Create sale
     let sale = await prisma.sale.create({
       data: {
+        user: { connect: { id: session.user.id } },
         saleDate: saleDate ? new Date(saleDate) : new Date(),
         subtotalAmount: originalSubtotal,
         discountAmount: derivedDiscount,
@@ -128,7 +149,8 @@ export async function POST(request: NextRequest) {
 
       await prisma.debt.create({
         data: {
-          saleId: sale.id,
+          user: { connect: { id: session.user.id } },
+          sale: { connect: { id: sale.id } },
           debtorName: debtorName ?? '',
           debtorPhone: debtorPhone ?? '',
           amount: totalAmount,
@@ -166,7 +188,8 @@ export async function POST(request: NextRequest) {
         // Record transaction
         await prisma.inventoryTransaction.create({
           data: {
-            productId: item.productId,
+            user: { connect: { id: session.user.id } },
+            product: { connect: { id: item.productId } },
             type: "OUT",
             quantity: item.quantity,
             notes: `Sale: ${sale.id}`,

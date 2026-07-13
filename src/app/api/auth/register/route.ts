@@ -5,9 +5,18 @@ import { z } from "zod";
 
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
-  name: z.string().min(2),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .refine((val) => /[A-Z]/.test(val), "Password must contain at least one uppercase letter")
+    .refine((val) => /[0-9]/.test(val), "Password must contain at least one number")
+    .refine((val) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val), "Password must contain at least one punctuation mark"),
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
   phone: z.string().optional(),
+  storeName: z.string().min(1),
+  storeLocation: z.string().min(1),
+  storeDescription: z.string().min(1).max(500),
 });
 
 export async function POST(request: NextRequest) {
@@ -15,7 +24,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Validate input
-    const { email, password, name, phone } = registerSchema.parse(body);
+    const { email, password, firstName, lastName, phone, storeName, storeLocation, storeDescription } = registerSchema.parse(body);
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -32,13 +41,17 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with optional store information
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        name,
+        firstName,
+        lastName,
         phone,
+        storeName: storeName ?? null,
+        storeLocation: storeLocation ?? null,
+        storeDescription: storeDescription ?? null,
       },
     });
 
@@ -46,7 +59,8 @@ export async function POST(request: NextRequest) {
       {
         id: user.id,
         email: user.email,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
       },
       { status: 201 }
     );

@@ -16,18 +16,6 @@ export interface Product {
   updatedAt: string;
 }
 
-export const DEFAULT_CATEGORIES = [
-  'Tools',
-  'Electrical',
-  'Plumbing',
-  'Paint',
-  'Lumber',
-  'Hardware',
-  'Safety',
-];
-
-export const UNIT_OPTIONS = ['kg', 'g', 'liter', 'pcs', 'meter', 'bag', 'box'];
-
 export function getCategoryIcon(cat: string) {
   const icons: Record<string, string> = {
     Tools: '🔧',

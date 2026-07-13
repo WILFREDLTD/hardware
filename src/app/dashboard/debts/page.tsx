@@ -63,6 +63,7 @@ export default function DebtsPage() {
   const [toastTitle, setToastTitle] = useState('');
   const [toastDescription, setToastDescription] = useState<string | undefined>(undefined);
   const [toastVariant, setToastVariant] = useState<'success' | 'error'>('success');
+  const [savingPayment, setSavingPayment] = useState(false);
 
   useEffect(() => { fetchDebts(); }, []);
 
@@ -124,6 +125,8 @@ export default function DebtsPage() {
       return;
     }
 
+    setSavingPayment(true);
+
     try {
       if (paymentMethod === 'MPESA') {
         if (!mpesaNumber.match(/^\d{10}$/)) {
@@ -182,6 +185,8 @@ export default function DebtsPage() {
     } catch (error: any) {
       console.error(error);
       showToast('error', 'Payment failed', error?.message || 'Unable to record payment.');
+    } finally {
+      setSavingPayment(false);
     }
   };
 
@@ -346,7 +351,7 @@ export default function DebtsPage() {
 
       {/* Payment Modal */}
       {selectedDebt && (
-        <Modal title={`Record Payment — ${selectedDebt.debtorName}`} onClose={() => setSelectedDebt(null)} onSubmit={handleRecordPayment}>
+        <Modal title={`Record Payment — ${selectedDebt.debtorName}`} onClose={() => setSelectedDebt(null)} onSubmit={handleRecordPayment} submitLabel={savingPayment ? 'Saving...' : 'Save'} submitDisabled={savingPayment}>
           <div className="space-y-4">
             <div className="bg-gray-50 rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
