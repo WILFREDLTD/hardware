@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 import { formatKES } from '@/lib/utils';
-import { AUTO_LOCK_TIMEOUT_STORAGE_KEY, getStoredAutoLockTimeoutMinutes } from '@/lib/autoLock';
+import { AUTO_LOCK_TIMEOUT_STORAGE_KEY, resolveAutoLockTimeoutMinutes } from '@/lib/autoLock';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -38,9 +38,14 @@ export default function DashboardPage() {
   const firstName = (session?.user as any)?.firstName || session?.user?.name || 'there';
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setAutoLockMinutes(String(getStoredAutoLockTimeoutMinutes(window.localStorage)));
-    }
+    const loadAutoLockValue = async () => {
+      if (typeof window !== 'undefined') {
+        const minutes = await resolveAutoLockTimeoutMinutes(window.localStorage);
+        setAutoLockMinutes(String(minutes));
+      }
+    };
+
+    void loadAutoLockValue();
 
     (async () => {
       try {

@@ -5,11 +5,15 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import Toast from '@/components/ui/Toast';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  getAutoLockTimeoutMs,
+  getStoredAutoLockTimeoutMinutes,
+  resolveAutoLockTimeoutMinutes,
+} from '@/lib/autoLock';
 
 const SESSION_KEY = 'hardwareStoreSession';
 const LOCK_KEY = 'dashboardLocked';
-const INACTIVITY_TIMEOUT = 60 * 1000;
 const SESSION_CREATED_EVENT = 'hardwareStoreSessionCreated';
 
 function getSession() {
@@ -39,6 +43,7 @@ function DashboardLayoutContent({
   const [ready, setReady] = useState(false);
   const [locked, setLocked] = useState(false);
   const [password, setPassword] = useState('');
+  const timeoutMinutesRef = useRef<number | null>(null);
   const [passwordError, setPasswordError] = useState('');
   const [unlocking, setUnlocking] = useState(false);
   const [showUnlockError, setShowUnlockError] = useState(false);
@@ -65,6 +70,11 @@ function DashboardLayoutContent({
 
     const isLocked = () => window.localStorage.getItem(LOCK_KEY) === 'true';
 
+    const getCurrentTimeoutMs = () => {
+      const minutes = timeoutMinutesRef.current ?? getStoredAutoLockTimeoutMinutes(window.localStorage);
+      return getAutoLockTimeoutMs(minutes);
+    };
+
     const checkSession = () => {
       const session = getSession();
       if (isLocked()) {
@@ -75,7 +85,7 @@ function DashboardLayoutContent({
         lockApp();
         return false;
       }
-      if (Date.now() - session.lastActivity > INACTIVITY_TIMEOUT) {
+      if (Date.now() - session.lastActivity > getCurrentTimeoutMs()) {
         lockApp();
         return false;
       }
@@ -85,7 +95,7 @@ function DashboardLayoutContent({
 
     const startInactivityTimer = () => {
       clearTimer();
-      timeoutId = window.setTimeout(lockApp, INACTIVITY_TIMEOUT);
+      timeoutId = window.setTimeout(lockApp, getCurrentTimeoutMs());
     };
 
     const handleActivity = () => {
@@ -100,6 +110,14 @@ function DashboardLayoutContent({
       }
     };
 
+    const handleConfigChange = async () => {
+      const minutes = await resolveAutoLockTimeoutMinutes(window.localStorage);
+      timeoutMinutesRef.current = minutes;
+      if (!isLocked()) {
+        startInactivityTimer();
+      }
+    };
+
     const handleLockActivated = () => {
       setLocked(true);
     };
@@ -110,15 +128,20 @@ function DashboardLayoutContent({
       }
     };
 
-    if (checkSession()) {
-      startInactivityTimer();
-    }
+    void (async () => {
+      const minutes = await resolveAutoLockTimeoutMinutes(window.localStorage);
+      timeoutMinutesRef.current = minutes;
+      if (checkSession()) {
+        startInactivityTimer();
+      }
+    })();
 
     setReady(true);
 
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart'];
     events.forEach((event) => window.addEventListener(event, handleActivity));
     window.addEventListener(SESSION_CREATED_EVENT, handleSessionCreated);
+    window.addEventListener('autoLockConfigChanged', handleConfigChange);
     window.addEventListener('dashboardLockActivated', handleLockActivated);
     window.addEventListener('storage', handleStorage);
 
@@ -126,6 +149,7 @@ function DashboardLayoutContent({
       clearTimer();
       events.forEach((event) => window.removeEventListener(event, handleActivity));
       window.removeEventListener(SESSION_CREATED_EVENT, handleSessionCreated);
+      window.removeEventListener('autoLockConfigChanged', handleConfigChange);
       window.removeEventListener('dashboardLockActivated', handleLockActivated);
       window.removeEventListener('storage', handleStorage);
     };

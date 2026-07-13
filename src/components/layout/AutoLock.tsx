@@ -53,41 +53,47 @@ export default function AutoLock({ children }: { children: React.ReactNode }) {
     const isLocked = () => window.localStorage.getItem(LOCK_KEY) === 'true';
 
     const getCurrentTimeoutMs = () => {
+      // Get the configured auto-lock timeout in minutes (from settings)
+      // Convert to seconds, then to milliseconds for the timer
       const minutes = timeoutMinutes ?? getStoredAutoLockTimeoutMinutes(window.localStorage);
       return getAutoLockTimeoutMs(minutes);
     };
 
-    const checkSession = () => {
+    const checkSessionTimeout = () => {
       const session = getSession();
-      if (isLocked()) {
-        return false;
-      }
       if (!session) {
-        return false;
+        return false; // No session yet, timeout check not applicable
       }
       if (Date.now() - session.lastActivity > getCurrentTimeoutMs()) {
         lockApp();
-        return false;
+        return true; // Session timed out
       }
-      setSessionLastActivity();
-      return true;
+      return false; // Session is valid
     };
 
     const startInactivityTimer = () => {
       clearTimer();
-      timeoutId = window.setTimeout(lockApp, getCurrentTimeoutMs());
+      // Reset activity timestamp and start fresh timer
+      setSessionLastActivity();
+      timeoutId = window.setTimeout(() => {
+        if (checkSessionTimeout()) {
+          lockApp();
+        }
+      }, getCurrentTimeoutMs());
     };
 
     const handleActivity = () => {
-      if (checkSession()) {
-        startInactivityTimer();
+      if (isLocked()) {
+        return;
       }
+      // Update last activity and restart timer
+      startInactivityTimer();
     };
 
     const handleConfigChange = async () => {
       const minutes = await resolveAutoLockTimeoutMinutes(window.localStorage);
       setTimeoutMinutes(minutes);
-      if (checkSession()) {
+      if (!isLocked()) {
         startInactivityTimer();
       }
     };
@@ -95,9 +101,9 @@ export default function AutoLock({ children }: { children: React.ReactNode }) {
     const init = async () => {
       const minutes = await resolveAutoLockTimeoutMinutes(window.localStorage);
       setTimeoutMinutes(minutes);
-      if (checkSession()) {
-        startInactivityTimer();
-      }
+      // Initialize the session on app load
+      setSessionLastActivity();
+      startInactivityTimer();
     };
 
     void init();
