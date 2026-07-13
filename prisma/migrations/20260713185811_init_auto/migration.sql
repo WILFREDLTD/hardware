@@ -340,4 +340,3 @@ ALTER TABLE "hardware"."hardwares" ADD CONSTRAINT "hardwares_listId_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "hardware"."hardwares" ADD CONSTRAINT "hardwares_userId_fkey" FOREIGN KEY ("userId") REFERENCES "hardware"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
