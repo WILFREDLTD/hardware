@@ -27,13 +27,7 @@ export default function Toast({
 
   if (!open) return null;
 
-  const containerClasses = variant === 'success'
-    ? 'w-[340px] rounded-2xl border border-emerald-700/20 bg-emerald-600 shadow-2xl shadow-emerald-900/30'
-    : 'w-[340px] rounded-2xl border border-red-700/20 bg-red-600 shadow-2xl shadow-red-900/30';
-
-  const iconClasses = variant === 'success'
-    ? 'mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500'
-    : 'mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-red-500';
+  // const accent = variant === 'success' ? 'emerald' : 'red';
 
   return (
     <div
@@ -41,77 +35,77 @@ export default function Toast({
       aria-live="polite"
       className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in"
     >
-      <div className={containerClasses}>
-        <div className="flex items-start gap-3 p-3">
-          <div className={iconClasses}>
-            {variant === 'success' ? (
-              <svg
-                className="h-4 w-4 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="h-4 w-4 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            )}
-          </div>
-
-          {/* Content */}
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-white">
-              {title}
-            </h3>
-
-            {description && (
-              <p className="mt-1 text-xs text-emerald-100 leading-5">
-                {description}
-              </p>
-            )}
-          </div>
-
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 text-emerald-100 transition hover:bg-emerald-500 hover:text-white"
-          >
+      <div
+        className={`relative inline-flex w-max max-w-sm min-w-[280px] items-center gap-2.5 overflow-hidden rounded-xl border bg-white/95 py-2.5 pl-2.5 pr-3 shadow-lg backdrop-blur-sm ${
+          variant === 'success'
+            ? 'border-emerald-100 shadow-emerald-900/10'
+            : 'border-red-100 shadow-red-900/10'
+        }`}
+      >
+        {/* Icon */}
+        <div
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+            variant === 'success' ? 'bg-emerald-100' : 'bg-red-100'
+          }`}
+        >
+          {variant === 'success' ? (
             <svg
-              className="h-4 w-4"
+              className="h-3.5 w-3.5 text-emerald-600"
               fill="none"
               viewBox="0 0 24 24"
-              strokeWidth={2}
+              strokeWidth={3}
               stroke="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-          </button>
+          ) : (
+            <svg
+              className="h-3.5 w-3.5 text-red-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={3}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
         </div>
 
-        {/* Progress Bar */}
-        <div className="h-1 overflow-hidden rounded-b-xl bg-emerald-500/40">
-          <div className="h-full animate-[toast-progress_4s_linear] bg-white" />
+        {/* Content */}
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="truncate text-sm font-semibold text-slate-800">{title}</p>
+          {description && (
+            <p className="mt-0.5 truncate text-xs text-slate-500">{description}</p>
+          )}
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+        >
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2.5}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Progress bar */}
+        <div
+          className={`absolute inset-x-0 bottom-0 h-0.5 ${
+            variant === 'success' ? 'bg-emerald-100' : 'bg-red-100'
+          }`}
+        >
+          <div
+            className={`h-full animate-[toast-progress_4s_linear] ${
+              variant === 'success' ? 'bg-emerald-500' : 'bg-red-500'
+            }`}
+          />
         </div>
       </div>
     </div>

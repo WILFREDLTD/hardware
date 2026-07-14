@@ -39,7 +39,7 @@ export default function CartItems({ cart, updateQty, removeFromCart, setCartVali
       return parsed < 1 || parsed > item.max
     })
 
-    setCartValidity(!hasInvalid)
+    setCartValidity(hasInvalid)
   }, [cart, quantityInputs, setCartValidity])
 
   const handleQuantityChange = (idx: number, item: CartItem, value: string) => {
@@ -50,11 +50,11 @@ export default function CartItems({ cart, updateQty, removeFromCart, setCartVali
 
     const parsed = parseInt(value, 10)
     if (Number.isNaN(parsed) || parsed < 1) {
-      setCartValidity(false)
+      setCartValidity(true)
       return
     }
 
-    setCartValidity(true)
+    setCartValidity(false)
     const normalized = Math.min(item.max, parsed)
     updateQty(idx, normalized)
     setQuantityInputs((current) => ({ ...current, [item.productId]: String(normalized) }))

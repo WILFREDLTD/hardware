@@ -35,7 +35,32 @@ export type Sale = {
   debt?: {
     debtorName?: string
     debtorPhone?: string
+    status?: 'PENDING' | 'PARTIAL' | 'PAID'
+    amount?: number
+    amountPaid?: number
   }
+}
+
+export type SaleModalProps = {
+  selectedSale: Sale | null
+  showSaleModal: boolean
+  closeSaleModal: () => void
+  updateSaleStatus: (e?: React.FormEvent) => Promise<boolean>
+  isProcessing: boolean
+  editedSaleItems: SaleItem[]
+  updateModalItemQty: (itemId: string, qty: number) => void
+  removeModalSaleItem: (itemId: string) => void
+  statusOption: 'PAID' | 'DEBT'
+  setStatusOption: (value: 'PAID' | 'DEBT') => void
+  debtorName: string
+  setDebtorName: (value: string) => void
+  debtorPhone: string
+  setDebtorPhone: (value: string) => void
+  confirmDelete: boolean
+  setConfirmDelete: (value: boolean) => void
+  deleteSale: () => Promise<void>
+  deleteReason: string
+  setDeleteReason: (value: string) => void
 }
 
 export type PendingSalePayload = {

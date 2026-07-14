@@ -191,7 +191,7 @@ function DashboardLayoutContent({
   };
 
   const handleUnlockCancel = () => {
-    router.push('/login');
+    router.push('/');
   };
 
   useEffect(() => {

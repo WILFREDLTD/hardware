@@ -69,6 +69,34 @@ export async function PATCH(
     let updatedTotal = sale.totalAmount;
     let itemsChanged = false;
 
+    const requestedItemIds = items?.map((item) => item.id) ?? [];
+    const removedItems = sale.saleItems.filter((item) => !requestedItemIds.includes(item.id));
+
+    if (removedItems.length > 0) {
+      itemsChanged = true;
+      for (const removedItem of removedItems) {
+        updatedTotal -= removedItem.total;
+        transactionOperations.push(
+          prisma.product.update({
+            where: { id: removedItem.productId },
+            data: { currentStock: { increment: removedItem.quantity } },
+          })
+        );
+        transactionOperations.push(
+          prisma.inventoryTransaction.create({
+            data: {
+              user: { connect: { id: session.user.id } },
+              product: { connect: { id: removedItem.productId } },
+              type: "IN",
+              quantity: removedItem.quantity,
+              notes: `Sale item removed: ${sale.id}`,
+            },
+          })
+        );
+        transactionOperations.push(prisma.saleItem.delete({ where: { id: removedItem.id } }));
+      }
+    }
+
     if (items?.length) {
       for (const itemUpdate of items) {
         const currentItem = sale.saleItems.find((item: { id: string }) => item.id === itemUpdate.id);
@@ -77,26 +105,6 @@ export async function PATCH(
         }
 
         if (itemUpdate.remove) {
-          itemsChanged = true;
-          updatedTotal -= currentItem.total;
-          transactionOperations.push(
-            prisma.product.update({
-              where: { id: currentItem.productId },
-              data: { currentStock: { increment: currentItem.quantity } },
-            })
-          );
-          transactionOperations.push(
-            prisma.inventoryTransaction.create({
-              data: {
-                user: { connect: { id: session.user.id } },
-                product: { connect: { id: currentItem.productId } },
-                type: "IN",
-                quantity: currentItem.quantity,
-                notes: `Sale item removed: ${sale.id}`,
-              },
-            })
-          );
-          transactionOperations.push(prisma.saleItem.delete({ where: { id: currentItem.id } }));
           continue;
         }
 
@@ -162,20 +170,20 @@ export async function PATCH(
           );
         }
       }
+    }
 
-      if (itemsChanged) {
-        saleUpdateData.totalAmount = updatedTotal;
-        if (sale.debt) {
-          transactionOperations.push(
-            prisma.debt.update({
-              where: { id: sale.debt.id },
-              data: {
-                amount: updatedTotal,
-                notes: (sale.debt.notes || "") + " | Updated after sale item changes",
-              },
-            })
-          );
-        }
+    if (itemsChanged) {
+      saleUpdateData.totalAmount = updatedTotal;
+      if (sale.debt) {
+        transactionOperations.push(
+          prisma.debt.update({
+            where: { id: sale.debt.id },
+            data: {
+              amount: updatedTotal,
+              notes: (sale.debt.notes || "") + " | Updated after sale item changes",
+            },
+          })
+        );
       }
     }
 
@@ -266,6 +274,14 @@ export async function PATCH(
       { status: 500 }
     );
   }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // PUT is an alias for PATCH - same update logic
+  return PATCH(request, { params });
 }
 
 export async function DELETE(

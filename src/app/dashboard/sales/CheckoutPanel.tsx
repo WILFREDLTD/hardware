@@ -13,6 +13,7 @@ interface CheckoutPanelProps {
   isCheckoutDisabled: boolean
   checkoutDisabledReason: string
   handleCashSale: () => Promise<void>
+  isProcessing: boolean
 }
 
 export default function CheckoutPanel({
@@ -26,6 +27,7 @@ export default function CheckoutPanel({
   handleCashSale,
   isCheckoutDisabled,
   checkoutDisabledReason,
+  isProcessing,
 }: CheckoutPanelProps) {
   return (
     <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm">
@@ -44,6 +46,7 @@ export default function CheckoutPanel({
         handleCashSale={handleCashSale}
         isCheckoutDisabled={isCheckoutDisabled}
         checkoutDisabledReason={checkoutDisabledReason}
+        isProcessing={isProcessing}
       />
     </div>
   )

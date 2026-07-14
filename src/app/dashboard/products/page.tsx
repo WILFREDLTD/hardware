@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
+import SkeletonCard from '@/components/ui/SkeletonCard';
 import { CategoryModal } from './components/CategoryModal';
 import { ProductFormModal } from './components/ProductFormModal';
 import { ProductSearchBar } from './components/ProductSearchBar';
@@ -15,6 +16,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [baseUnits, setBaseUnits] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [showNewUnitModal, setShowNewUnitModal] = useState(false);
@@ -36,8 +38,11 @@ export default function ProductsPage() {
   });
 
   useEffect(() => {
-    fetchProducts();
-    loadBaseUnits();
+    setIsLoading(true);
+    Promise.all([
+      fetchProducts(),
+      loadBaseUnits(),
+    ]).finally(() => setIsLoading(false));
 
     // load persisted categories from server (if available)
     (async () => {
@@ -207,21 +212,35 @@ export default function ProductsPage() {
 
   const handleAddNewUnit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newUnit = pendingNewUnit.trim().toLowerCase();
-    if (!newUnit || baseUnits.includes(newUnit)) return;
-    
+    const raw = pendingNewUnit.trim();
+    const newUnit = raw.toLowerCase();
+    if (!newUnit) return;
+
     try {
       const res = await fetch('/api/base-units', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ unit: newUnit }),
       });
-      
+
+      const data = await res.json();
       if (res.ok) {
-        setBaseUnits((prev) => [...prev, newUnit]);
-        setFormData({ ...formData, baseUnit: newUnit });
+        // Use server-returned value (in case server normalizes the name)
+        const created = (data.unit || newUnit).toString();
+        setBaseUnits((prev) => (prev.includes(created) ? prev : [created, ...prev]));
+        setFormData({ ...formData, baseUnit: created });
         setShowNewUnitModal(false);
         setPendingNewUnit('');
+      } else {
+        // If unit already exists, reload units and select it
+        if (data?.error === 'Unit already exists') {
+          await loadBaseUnits();
+          setFormData({ ...formData, baseUnit: newUnit });
+          setShowNewUnitModal(false);
+          setPendingNewUnit('');
+        } else {
+          console.error('Failed to add unit:', data?.error || res.statusText);
+        }
       }
     } catch (error) {
       console.error('Failed to add unit:', error);
@@ -246,16 +265,54 @@ export default function ProductsPage() {
         action={<Button onClick={handleOpenAddModal}>+ Add Product</Button>}
       />
 
-      <ProductStats
-        products={products}
-        categories={categories}
-        packagedCount={packagedCount}
-        uniqueBaseUnits={uniqueBaseUnits}
-      />
+      {isLoading ? (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </>
+      ) : (
+        <ProductStats
+          products={products}
+          categories={categories}
+          packagedCount={packagedCount}
+          uniqueBaseUnits={uniqueBaseUnits}
+        />
+      )}
 
       <ProductSearchBar search={search} onSearchChange={setSearch} />
 
-      <ProductTable products={filtered} onEdit={handleOpenEditModal} />
+      {isLoading ? (
+        <div className="overflow-x-auto border border-gray-200 rounded-2xl">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Product</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Category</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Base Unit</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Package</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i} className="border-b border-gray-200 hover:bg-gray-50 animate-pulse">
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <ProductTable products={filtered} onEdit={handleOpenEditModal} />
+      )}
 
       {showModal && (
         <ProductFormModal

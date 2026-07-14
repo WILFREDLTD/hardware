@@ -10,6 +10,7 @@ interface CheckoutSummaryProps {
   handleCashSale: () => Promise<void>
   isCheckoutDisabled: boolean
   checkoutDisabledReason: string
+  isProcessing: boolean
 }
 
 export default function CheckoutSummary({
@@ -21,6 +22,7 @@ export default function CheckoutSummary({
   handleCashSale,
   isCheckoutDisabled,
   checkoutDisabledReason,
+  isProcessing,
 }: CheckoutSummaryProps) {
   return (
     <>
@@ -137,20 +139,29 @@ export default function CheckoutSummary({
         <button
           type="button"
           onClick={handleCashSale}
-          disabled={isCheckoutDisabled}
+          disabled={isCheckoutDisabled || isProcessing}
           title={isCheckoutDisabled ? checkoutDisabledReason : undefined}
-          className="w-full rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
           style={{
             backgroundColor: changeValue < 0 ? '#dc2626' : '#047857',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = changeValue < 0 ? '#b91c1c' : '#065f46';
+            if (!isCheckoutDisabled && !isProcessing) {
+              e.currentTarget.style.backgroundColor = changeValue < 0 ? '#b91c1c' : '#065f46';
+            }
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = changeValue < 0 ? '#dc2626' : '#047857';
           }}
         >
-          {changeValue < 0 ? 'Record as Debt Sale →' : 'Record Cash Sale →'}
+          {isProcessing ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : (
+            <span>{changeValue < 0 ? 'Record as Debt Sale →' : 'Record Cash Sale →'}</span>
+          )}
         </button>
       </div>
     </>

@@ -54,7 +54,7 @@ export default function DebtsPage() {
   const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'PENDING' | 'PARTIAL' | 'PAID'>('all');
   const [search, setSearch] = useState('');
-  const [formData, setFormData] = useState({ debtorName: '', debtorPhone: '', amount: 0 });
+  const [formData, setFormData] = useState({ debtorName: '', debtorPhone: '', amount: '' });
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'MPESA'>('CASH');
   const [mpesaNumber, setMpesaNumber] = useState('');
@@ -87,13 +87,13 @@ export default function DebtsPage() {
     try {
       const res = await fetch('/api/debts', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, amount: parseFloat(formData.amount as any) }),
+        body: JSON.stringify({ ...formData, amount: parseInt(formData.amount, 10) }),
       });
       if (res.ok) {
         fetchDebts();
         window.dispatchEvent(new Event('debtsUpdated'));
         setShowModal(false);
-        setFormData({ debtorName: '', debtorPhone: '', amount: 0 });
+        setFormData({ debtorName: '', debtorPhone: '', amount: '' });
       }
       else {
         const error = await res.json()
@@ -113,15 +113,15 @@ export default function DebtsPage() {
     e.preventDefault();
     if (!selectedDebt) return;
 
-    const amount = parseFloat(paymentAmount);
+    const amount = parseInt(paymentAmount, 10);
     if (!amount || amount <= 0) {
-      showToast('error', 'Invalid amount', 'Enter a valid payment amount.');
+      showToast('error', 'Invalid amount', 'Enter valid amount.');
       return;
     }
 
     const remaining = selectedDebt.amount - selectedDebt.amountPaid;
     if (amount > remaining) {
-      showToast('error', 'Amount too large', 'Payment cannot exceed remaining debt.');
+      showToast('error', 'Too large', 'Cannot exceed debt.');
       return;
     }
 
@@ -130,7 +130,7 @@ export default function DebtsPage() {
     try {
       if (paymentMethod === 'MPESA') {
         if (!mpesaNumber.match(/^\d{10}$/)) {
-          showToast('error', 'Invalid M-Pesa number', 'Enter a 10-digit mobile number.');
+          showToast('error', 'Invalid number', 'Enter 10 digits.');
           return;
         }
 
@@ -148,7 +148,7 @@ export default function DebtsPage() {
 
         const pushData = await pushRes.json();
         if (!pushRes.ok) {
-          showToast('error', 'M-Pesa failed', pushData?.error || 'Unable to send prompt.');
+          showToast('error', 'M-Pesa failed', 'Prompt send failed.');
           setMpesaStatus(`M-Pesa push failed: ${pushData?.error || pushRes.statusText}`);
           return;
         }
@@ -169,13 +169,13 @@ export default function DebtsPage() {
         }),
       });
 
-      const result = await res.json();
+      // const result = await res.json();
       if (!res.ok) {
-        showToast('error', 'Payment failed', result?.error || 'Unable to record debt payment.');
+        showToast('error', 'Payment failed', 'Recording failed.');
         return;
       }
 
-      showToast('success', 'Payment recorded', `Debt payment of KES ${formatKES(amount)} was saved.`);
+      showToast('success', 'Payment recorded', `KES ${formatKES(amount)} saved.`);
       fetchDebts();
       setSelectedDebt(null);
       setPaymentAmount('');
@@ -184,7 +184,7 @@ export default function DebtsPage() {
       setMpesaStatus(null);
     } catch (error: any) {
       console.error(error);
-      showToast('error', 'Payment failed', error?.message || 'Unable to record payment.');
+      showToast('error', 'Payment failed', 'Recording failed.');
     } finally {
       setSavingPayment(false);
     }
@@ -208,6 +208,61 @@ export default function DebtsPage() {
         subtitle="Track and manage customer debts"
         action={<Button onClick={() => setShowModal(true)}>+ Add Debt</Button>}
       />
+
+      {loading ? (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm animate-pulse">
+                <div className="h-3 bg-gray-200 rounded w-1/3 mb-3" />
+                <div className="h-6 bg-gray-200 rounded w-2/3 mb-2" />
+                <div className="h-3 bg-gray-200 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 px-5 py-4">
+            <div className="h-3 bg-gray-200 rounded w-1/4 mb-4 animate-pulse" />
+            <div className="h-3 bg-gray-200 rounded w-full mb-3 animate-pulse" />
+            <div className="h-3 bg-gray-200 rounded w-5/6 animate-pulse" />
+          </div>
+
+          <div className="space-y-3">
+            <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse" />
+            <div className="flex flex-wrap gap-3">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="h-10 min-w-[8rem] rounded-xl bg-gray-200 animate-pulse" />
+              ))}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto border border-gray-200 rounded-2xl bg-white">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <th key={index} className="px-4 py-3 text-left text-xs font-semibold text-gray-700">
+                      <div className="h-3 bg-gray-200 rounded w-24 animate-pulse" />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <tr key={index} className="border-b border-gray-200 animate-pulse">
+                    {Array.from({ length: 6 }).map((_, cellIndex) => (
+                      <td key={cellIndex} className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded w-full" />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <>
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -263,11 +318,7 @@ export default function DebtsPage() {
       </div>
 
       {/* Table */}
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-gray-200 border-t-green-600 rounded-full animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <Card>
           <div className="text-center py-16">
             <div className="text-5xl mb-4">💳</div>
@@ -337,6 +388,8 @@ export default function DebtsPage() {
           </table>
         </Card>
       )}
+        </>
+      )}
 
       {/* Add Debt Modal */}
       {showModal && (
@@ -344,7 +397,18 @@ export default function DebtsPage() {
           <div className="space-y-4">
             <Input label="Debtor Name" required value={formData.debtorName} onChange={e => setFormData({ ...formData, debtorName: e.target.value })} />
             <Input label="Phone Number" required value={formData.debtorPhone} onChange={e => setFormData({ ...formData, debtorPhone: e.target.value })} />
-            <Input label="Amount (KES)" type="number" step="0.01" required value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value as any })} />
+            <Input
+              label="Amount (KES)"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              required
+              value={formData.amount}
+              onChange={e => setFormData({
+                ...formData,
+                amount: e.target.value.replace(/[^0-9]/g, ''),
+              })}
+            />
           </div>
         </Modal>
       )}
@@ -400,13 +464,14 @@ export default function DebtsPage() {
 
               <Input
                 label="Payment Amount (KES)"
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 required
-                max={selectedDebt.amount - selectedDebt.amountPaid}
                 value={paymentAmount}
-                onChange={e => setPaymentAmount(e.target.value)}
+                onChange={e => setPaymentAmount(e.target.value.replace(/[^0-9]/g, ''))}
               />
+              <p className="text-xs text-gray-500">You can pay up to KES {formatKES(selectedDebt.amount - selectedDebt.amountPaid)}.</p>
             </div>
           </div>
         </Modal>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 
@@ -28,6 +28,21 @@ interface Props {
 }
 
 export function ProductFormModal({ isEditing, isSaving, formData, categories, baseUnits, onClose, onSubmit, onChange, onCategoryChange, onBaseUnitChange }: Props) {
+  const baseUnitSelectRef = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    // Reset select to current formData.baseUnit value after render
+    if (baseUnitSelectRef.current) {
+      baseUnitSelectRef.current.value = formData.baseUnit;
+    }
+  }, [formData.baseUnit]);
+
+  // Handle resetting the select when it has an invalid value
+  useEffect(() => {
+    if (baseUnitSelectRef.current && baseUnitSelectRef.current.value === 'NEW_UNIT') {
+      baseUnitSelectRef.current.value = formData.baseUnit;
+    }
+  });
   return (
     <Modal title={isEditing ? 'Edit Product' : 'Add Product'} onClose={onClose} onSubmit={onSubmit} submitDisabled={isSaving} submitLabel={isSaving ? 'Saving...' : undefined}>
       <div className="space-y-4">
@@ -43,16 +58,18 @@ export function ProductFormModal({ isEditing, isSaving, formData, categories, ba
           </div>
         </div>
 
-        <Input label="Nickname" placeholder="Optional short name" value={formData.nickname} onChange={(e) => onChange('nickname', e.target.value)} />
-
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Nickname" placeholder="Optional short name" value={formData.nickname} onChange={(e) => onChange('nickname', e.target.value)} />
           <div className="flex flex-col">
             <label className="text-sm font-medium text-gray-700 mb-1.5">Base Unit</label>
-            <select value={formData.baseUnit} onChange={onBaseUnitChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all">
+            <select ref={baseUnitSelectRef} value={formData.baseUnit} onChange={onBaseUnitChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-all">
               {baseUnits.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
               <option value="NEW_UNIT" className="font-semibold text-blue-600">+ New Unit</option>
             </select>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Package Unit" placeholder="bag, box, bundle" value={formData.packageUnitLabel} onChange={(e) => onChange('packageUnitLabel', e.target.value)} />
           <Input label="Package Size" type="number" min="0" value={formData.packageSize} onChange={(e) => onChange('packageSize', parseInt(e.target.value || '0', 10))} />
         </div>
