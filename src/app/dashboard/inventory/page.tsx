@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
 import Toast from '@/components/ui/Toast';
+import SkeletonCard from '@/components/ui/SkeletonCard';
 import { InventoryStats } from './components/InventoryStats';
 import { InventorySearchBar } from './components/InventorySearchBar';
 import { InventoryTable } from './components/InventoryTable';
@@ -234,7 +235,16 @@ export default function InventoryPage() {
   return (
     <div className="space-y-6">
       <Header title="Inventory" subtitle="Use an existing product definition, then assign stock levels, low thresholds, and pricing." />
-      <InventoryStats products={products} />
+      {loading ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      ) : (
+        <InventoryStats products={products} />
+      )}
 
       {showInventoryPanel && (
         <InventoryForm
@@ -281,7 +291,30 @@ export default function InventoryPage() {
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-500">Loading inventory…</div>
+        <div className="overflow-x-auto border border-gray-200 rounded-2xl">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Product</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Stock Level</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Min Stock</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Unit Price</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i} className="border-b border-gray-200 hover:bg-gray-50 animate-pulse">
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                  <td className="px-4 py-3"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <InventoryTable products={filtered} getStockStatus={getStockStatus} onProductClick={(id) => {
           setFormData((current) => ({ ...current, productId: id, adjustQuantity: 0 }));

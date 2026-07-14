@@ -38,7 +38,9 @@ export function InventoryTable({ products, getStockStatus, onProductClick }: Pro
                 <td className="py-4 px-4 text-sm text-gray-600">{product.packageSize ? `${Math.floor(product.currentStock / product.packageSize)} ${product.packageUnitLabel || 'packages'}` : '—'}</td>
                 <td className="py-4 px-4 text-sm text-gray-900">{product.packageSize ? `KES ${formatKES(product.unitPrice * product.packageSize)}` : '—'}</td>
                 <td className="py-4 px-4 text-sm text-gray-900">KES {formatKES(product.unitPrice)}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{product.minStockLevel} {product.baseUnit}</td>
+                <td className="py-4 px-4 text-sm text-gray-600">
+                  {product.packageSize ? `${Math.floor(product.minStockLevel / product.packageSize)} ${product.packageUnitLabel || 'packages'}=${product.minStockLevel} ${product.baseUnit}` : `${product.minStockLevel} ${product.baseUnit}`}
+                </td>
                 <td className="py-4 px-4"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${status.color}`}>{status.label}</span></td>
               </tr>
             );

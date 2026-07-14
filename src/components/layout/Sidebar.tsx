@@ -41,6 +41,9 @@ const navigationSections: NavSection[] = [
 export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
   const [inventoryCount, setInventoryCount] = useState<number | null>(null);
   const [debtsCount, setDebtsCount] = useState<number | null>(null);
+  const [productsCount, setProductsCount] = useState<number | null>(null);
+  const [salesCount, setSalesCount] = useState<number | null>(null);
+  const [recentSalesCount, setRecentSalesCount] = useState<number | null>(null);
   const [hardwareLists, setHardwareLists] = useState<Array<{ id: string; name: string }>>([]);
   const [storeName, setStoreName] = useState('Hardware Stock');
   const [storeLocation, setStoreLocation] = useState('');
@@ -48,23 +51,41 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const [inventoryRes, debtsRes] = await Promise.all([
+        const [inventoryRes, debtsRes, salesRes] = await Promise.all([
           fetch('/api/inventory'),
           fetch('/api/debts'),
+          fetch('/api/sales'),
         ]);
 
         if (inventoryRes.ok) {
           const inventory = await inventoryRes.json();
-          setInventoryCount(Array.isArray(inventory) ? inventory.length : 0);
+          const count = Array.isArray(inventory) ? inventory.length : 0;
+          setInventoryCount(count);
+          setProductsCount(count);
         }
 
         if (debtsRes.ok) {
           const debts = await debtsRes.json();
           setDebtsCount(Array.isArray(debts) ? debts.length : 0);
         }
+
+        if (salesRes.ok) {
+          const sales = await salesRes.json();
+          const allSalesCount = Array.isArray(sales) ? sales.length : 0;
+          setSalesCount(allSalesCount);
+          
+          // Recent sales (last 7 days)
+          const recentCount = Array.isArray(sales) 
+            ? sales.filter((s: any) => new Date(s.saleDate) >= new Date(Date.now() - 7 * 86400000)).length 
+            : 0;
+          setRecentSalesCount(recentCount);
+        }
       } catch {
         setInventoryCount(0);
         setDebtsCount(0);
+        setProductsCount(0);
+        setSalesCount(0);
+        setRecentSalesCount(0);
       }
     };
 
@@ -184,6 +205,12 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
                 ? inventoryCount
                 : item.href === '/dashboard/debts'
                   ? debtsCount
+                : item.href === '/dashboard/products'
+                  ? productsCount
+                : item.href === '/dashboard/sales'
+                  ? salesCount
+                : item.href === '/dashboard/sales/recent'
+                  ? recentSalesCount
                   : item.badge;
 
               return (

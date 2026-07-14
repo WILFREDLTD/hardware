@@ -14,6 +14,7 @@ export function useSalesPage() {
     income,
     setIncome,
     sales,
+    isLoading,
     refreshSales,
     refreshProducts,
   } = useSalesData()
@@ -231,9 +232,9 @@ export function useSalesPage() {
     await submitSale(payload)
   }
 
-  async function updateSaleStatus(e: FormEvent) {
-    e.preventDefault()
-    if (!selectedSale) return
+  async function updateSaleStatus(e?: FormEvent) {
+    e?.preventDefault()
+    if (!selectedSale) return false
     setIsProcessing(true)
 
     try {
@@ -241,11 +242,11 @@ export function useSalesPage() {
       if (statusOption === 'DEBT' && selectedSale.paymentStatus !== 'DEBT') {
         if (!debtorName.trim()) {
           alert('Debtor name is required to mark this sale as debt.')
-          return
+          return false
         }
         if (!/^[0-9]{10}$/.test(debtorPhone.trim())) {
           alert('Debtor phone must be exactly 10 digits.')
-          return
+          return false
         }
         payload.debtorName = debtorName.trim()
         payload.debtorPhone = debtorPhone.trim()
@@ -261,12 +262,22 @@ export function useSalesPage() {
       if (!response.ok) {
         const error = await response.json()
         alert(error?.error || 'Failed to update sale status')
-        return
+        return false
       }
 
       refreshSales()
       closeSaleModal()
       setToastOpen(true)
+
+      if (selectedSale.paymentStatus === 'DEBT' || statusOption === 'DEBT') {
+        window.dispatchEvent(new Event('debtsUpdated'))
+      }
+
+      return true
+    } catch (error) {
+      console.error('Update sale status error:', error)
+      alert('An unexpected error occurred while updating the sale.')
+      return false
     } finally {
       setIsProcessing(false)
     }
@@ -362,6 +373,7 @@ export function useSalesPage() {
     checkoutDisabledReason,
     income,
     sales,
+    isLoading,
   }
 }
 

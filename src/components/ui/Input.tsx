@@ -67,6 +67,7 @@ export const Input: React.FC<InputProps> = ({
             focus:outline-none focus:ring-2 focus:ring-green-500
             focus:border-transparent transition
             disabled:bg-gray-100 disabled:cursor-not-allowed
+            ${props.type === 'number' ? 'appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none -moz-appearance:textfield' : ''}
             ${error ? 'border-red-500' : ''}
             ${className}`
           }

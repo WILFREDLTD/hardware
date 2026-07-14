@@ -111,6 +111,7 @@ export default function SalesPageView(props: SalesPageProps) {
             handleCashSale={handleCashSale}
             isCheckoutDisabled={isCheckoutDisabled}
             checkoutDisabledReason={checkoutDisabledReason}
+            isProcessing={isProcessing}
           />
         </div>
       </div>
@@ -139,7 +140,7 @@ export default function SalesPageView(props: SalesPageProps) {
         />
       )}
 
-      <Toast open={toastOpen} onClose={() => setToastOpen(false)} title="Sale recorded" description="Sale successfully recorded and stock updated." />
+      <Toast open={toastOpen} onClose={() => setToastOpen(false)} title="Sale recorded" description="Sale successfully recorded" />
 
       <DebtModal
         showDebtModal={showDebtModal}

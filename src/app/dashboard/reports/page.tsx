@@ -199,6 +199,8 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'sales' | 'inventory' | 'debts' | 'profit'>('overview');
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+  const [showCSVDropdown, setShowCSVDropdown] = useState(false);
+  const csvDropdownRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -214,6 +216,23 @@ export default function ReportsPage() {
       setDebts(Array.isArray(d) ? d : []);
     }).finally(() => setLoading(false));
   }, []);
+
+  // ── Close CSV dropdown when clicking outside ──
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (csvDropdownRef.current && !csvDropdownRef.current.contains(event.target as Node)) {
+        setShowCSVDropdown(false);
+      }
+    };
+    
+    if (showCSVDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCSVDropdown]);
 
   // ── Date filtering ──
   const filteredSales = sales.filter(s => {
@@ -396,23 +415,28 @@ export default function ReportsPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
               Export PDF
             </button>
-            <div className="relative group">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-700 hover:border-gray-300 transition-all">
+            <div className="relative" ref={csvDropdownRef}>
+              <button 
+                onClick={() => setShowCSVDropdown(!showCSVDropdown)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-700 hover:border-gray-300 transition-all"
+              >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                 Export CSV ▾
               </button>
-              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20 hidden group-hover:block w-44">
-                {[
-                  { label: 'Sales CSV', fn: exportSalesCSV },
-                  { label: 'Inventory CSV', fn: exportInventoryCSV },
-                  { label: 'Debts CSV', fn: exportDebtsCSV },
-                  { label: 'Profit & Loss CSV', fn: exportProfitCSV },
-                ].map(e => (
-                  <button key={e.label} onClick={e.fn} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                    {e.label}
-                  </button>
-                ))}
-              </div>
+              {showCSVDropdown && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20 w-44">
+                  {[
+                    { label: 'Sales CSV', fn: exportSalesCSV },
+                    { label: 'Inventory CSV', fn: exportInventoryCSV },
+                    { label: 'Debts CSV', fn: exportDebtsCSV },
+                    { label: 'Profit & Loss CSV', fn: exportProfitCSV },
+                  ].map(e => (
+                    <button key={e.label} onClick={() => { e.fn(); setShowCSVDropdown(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                      {e.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
