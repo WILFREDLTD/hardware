@@ -170,6 +170,7 @@ export function useSalesPage() {
         .then((res) => res.json())
         .then((stats) => setIncome(stats.totalRevenue || 0))
 
+      window.dispatchEvent(new Event('salesUpdated'))
       if (body.paymentStatus === 'DEBT' || data?.debt) {
         window.dispatchEvent(new Event('debtsUpdated'))
       }
@@ -268,6 +269,7 @@ export function useSalesPage() {
       refreshSales()
       closeSaleModal()
       setToastOpen(true)
+      window.dispatchEvent(new Event('salesUpdated'))
 
       if (selectedSale.paymentStatus === 'DEBT' || statusOption === 'DEBT') {
         window.dispatchEvent(new Event('debtsUpdated'))
@@ -307,6 +309,7 @@ export function useSalesPage() {
       refreshSales()
       closeSaleModal()
       setToastOpen(true)
+      window.dispatchEvent(new Event('salesUpdated'))
     } finally {
       setIsProcessing(false)
     }

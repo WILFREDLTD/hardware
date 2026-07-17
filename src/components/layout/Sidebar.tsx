@@ -121,13 +121,15 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
     fetchLists();
     fetchStoreProfile();
 
-    const handleDebtsUpdated = () => {
+    const handleCountsUpdated = () => {
       fetchCounts();
     };
 
-    window.addEventListener('debtsUpdated', handleDebtsUpdated);
+    window.addEventListener('debtsUpdated', handleCountsUpdated);
+    window.addEventListener('salesUpdated', handleCountsUpdated);
     return () => {
-      window.removeEventListener('debtsUpdated', handleDebtsUpdated);
+      window.removeEventListener('debtsUpdated', handleCountsUpdated);
+      window.removeEventListener('salesUpdated', handleCountsUpdated);
     };
   }, []);
 
@@ -173,7 +175,7 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
             />
           </p>
           {storeLocation ? (
-            <p className="text-sm font-semibold text-emerald-300 mt-2">
+            <p className="text-sm font-semibold mt-2"  style={{color: '#db147b', fontFamily: "'DM Sans', sans-serif", fontSize: '15px'}}>
               {storeLocation}
             </p>
           ) : null}
