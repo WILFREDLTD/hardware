@@ -6,9 +6,10 @@ interface Props {
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   onPendingChange: (field: 'name' | 'phone', value: string) => void;
+  isSubmitting?: boolean;
 }
 
-export function SupplierModal({ pendingNewSupplier, onClose, onSubmit, onPendingChange }: Props) {
+export function SupplierModal({ pendingNewSupplier, onClose, onSubmit, onPendingChange, isSubmitting }: Props) {
   const handlePhoneChange = (value: string) => {
     // Remove all non-digit characters
     const digitsOnly = value.replace(/\D/g, '');
@@ -25,7 +26,13 @@ export function SupplierModal({ pendingNewSupplier, onClose, onSubmit, onPending
   const isFormValid = nameValid && phoneValid;
 
   return (
-    <Modal title="Add New Supplier" onClose={onClose} onSubmit={onSubmit} submitDisabled={!isFormValid}>
+    <Modal
+      title="Add New Supplier"
+      onClose={onClose}
+      onSubmit={onSubmit}
+      submitDisabled={isSubmitting || !isFormValid}
+      isSubmitting={isSubmitting}
+    >
       <div className="space-y-4">
         <Input
           label="Supplier Name"

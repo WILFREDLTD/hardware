@@ -5,6 +5,7 @@ interface ModalProps {
   onSubmit?: (e: React.FormEvent) => void;
   submitLabel?: string;
   submitDisabled?: boolean;
+  isSubmitting?: boolean;
   overlayClassName?: string;
   containerClassName?: string;
 }
@@ -16,9 +17,11 @@ export const Modal: React.FC<ModalProps> = ({
   onSubmit,
   submitLabel,
   submitDisabled,
+  isSubmitting,
   overlayClassName,
   containerClassName,
 }) => {
+  const finalLabel = isSubmitting ? (submitLabel || 'Saving...') : (submitLabel || 'Save');
   return (
     <>
       <div
@@ -39,10 +42,17 @@ export const Modal: React.FC<ModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={submitDisabled}
-              className={`flex-1 px-4 py-2 rounded-lg transition font-semibold ${submitDisabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-green-500 text-white hover:bg-green-600'}`}
+              disabled={submitDisabled || isSubmitting}
+              className={`flex-1 px-4 py-2 rounded-lg transition font-semibold ${submitDisabled || isSubmitting ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-green-500 text-white hover:bg-green-600'} ${isSubmitting ? 'cursor-wait' : ''}`}
             >
-              {submitLabel || 'Save'}
+              {isSubmitting ? (
+                <span className="inline-flex items-center justify-center gap-2">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  {finalLabel}
+                </span>
+              ) : (
+                finalLabel
+              )}
             </button>
           </div>
         </form>
