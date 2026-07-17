@@ -35,8 +35,14 @@ export function ProductTable({ products, onEdit }: Props) {
               <td className="py-4 px-4"><span className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-lg">{product.category}</span></td>
               <td className="py-4 px-4 text-sm text-gray-700">{product.baseUnit}</td>
               <td className="py-4 px-4 text-sm text-gray-700">
-                <div className="text-sm font-semibold text-gray-900">{product.supplierName || 'unknown'}</div>
-                <div className="text-xs text-gray-400">{product.supplierNumber || 'unknown'}</div>
+                {product.supplier ? (
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">{product.supplier.name}</div>
+                    <div className="text-xs text-gray-400">{product.supplier.phone || 'No phone'}</div>
+                  </div>
+                ) : (
+                  <span className="text-gray-400">No supplier</span>
+                )}
               </td>
               <td className="py-4 px-4 text-sm text-gray-700">{product.packageSize ? `1 ${product.packageUnitLabel || 'package'} = ${product.packageSize} ${product.baseUnit}` : '—'}</td>
             </tr>

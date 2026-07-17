@@ -1,3 +1,9 @@
+export interface Supplier {
+  id: string;
+  name: string;
+  phone?: string | null;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -8,6 +14,8 @@ export interface Product {
   baseUnit: string;
   packageUnitLabel?: string;
   packageSize?: number;
+  supplierId?: string | null;
+  supplier?: Supplier | null;
   supplierName?: string;
   supplierNumber?: string;
   unitPrice: number;

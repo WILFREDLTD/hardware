@@ -9,21 +9,31 @@ import { ProductFormModal } from './components/ProductFormModal';
 import { ProductSearchBar } from './components/ProductSearchBar';
 import { ProductStats } from './components/ProductStats';
 import { ProductTable } from './components/ProductTable';
+import { SupplierModal } from './components/SupplierModal';
 import { UnitModal } from './components/UnitModal';
 import { type Product } from './components/types';
+
+interface Supplier {
+  id: string;
+  name: string;
+  phone?: string | null;
+}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [baseUnits, setBaseUnits] = useState<string[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [showNewUnitModal, setShowNewUnitModal] = useState(false);
+  const [showNewSupplierModal, setShowNewSupplierModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [pendingNewCategory, setPendingNewCategory] = useState('');
   const [pendingNewUnit, setPendingNewUnit] = useState('');
+  const [pendingNewSupplier, setPendingNewSupplier] = useState({ name: '', phone: '' });
   const [search, setSearch] = useState('');
   const [formData, setFormData] = useState({
     id: '',
@@ -33,8 +43,7 @@ export default function ProductsPage() {
     baseUnit: '',
     packageUnitLabel: '',
     packageSize: 0,
-    supplierName: '',
-    supplierNumber: '',
+    supplierId: '',
   });
 
   useEffect(() => {
@@ -42,6 +51,7 @@ export default function ProductsPage() {
     Promise.all([
       fetchProducts(),
       loadBaseUnits(),
+      loadSuppliers(),
     ]).finally(() => setIsLoading(false));
 
     // load persisted categories from server (if available)
@@ -72,6 +82,18 @@ export default function ProductsPage() {
     }
   };
 
+  const loadSuppliers = async () => {
+    try {
+      const res = await fetch('/api/suppliers');
+      if (res.ok) {
+        const data = await res.json();
+        setSuppliers(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Failed to load suppliers:', error);
+    }
+  };
+
   const fetchProducts = async () => {
     try {
       const res = await fetch('/api/inventory');
@@ -92,8 +114,7 @@ export default function ProductsPage() {
       baseUnit: baseUnits[0] ?? '',
       packageUnitLabel: '',
       packageSize: 0,
-      supplierName: '',
-      supplierNumber: '',
+      supplierId: '',
     });
     setShowModal(true);
   };
@@ -108,8 +129,7 @@ export default function ProductsPage() {
       baseUnit: product.baseUnit,
       packageUnitLabel: product.packageUnitLabel || '',
       packageSize: product.packageSize || 0,
-      supplierName: product.supplierName || '',
-      supplierNumber: product.supplierNumber || '',
+      supplierId: product.supplierId || '',
     });
     setShowModal(true);
   };
@@ -118,9 +138,11 @@ export default function ProductsPage() {
     setShowModal(false);
     setShowNewCategoryModal(false);
     setShowNewUnitModal(false);
+    setShowNewSupplierModal(false);
     setIsEditing(false);
     setPendingNewCategory('');
     setPendingNewUnit('');
+    setPendingNewSupplier({ name: '', phone: '' });
     setFormData({
       id: '',
       name: '',
@@ -129,8 +151,7 @@ export default function ProductsPage() {
       baseUnit: baseUnits[0] ?? '',
       packageUnitLabel: '',
       packageSize: 0,
-      supplierName: '',
-      supplierNumber: '',
+      supplierId: '',
     });
   };
 
@@ -145,8 +166,6 @@ export default function ProductsPage() {
         body: JSON.stringify({
           ...formData,
           nickname: formData.nickname.trim() || undefined,
-          supplierName: formData.supplierName.trim() || 'unknown',
-          supplierNumber: formData.supplierNumber.trim() || 'unknown',
           packageSize: formData.packageSize ? parseInt(String(formData.packageSize), 10) : undefined,
         }),
       });
@@ -247,6 +266,46 @@ export default function ProductsPage() {
     }
   };
 
+  const handleSupplierChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (e.target.value === 'NEW_SUPPLIER') {
+      setShowNewSupplierModal(true);
+      return;
+    }
+    setFormData({ ...formData, supplierId: e.target.value });
+    setPendingNewSupplier({ name: '', phone: '' });
+  };
+
+  const handleAddNewSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const newSupplierName = pendingNewSupplier.name.trim();
+    const newSupplierPhone = pendingNewSupplier.phone.trim();
+
+    if (!newSupplierName) return;
+
+    try {
+      const res = await fetch('/api/suppliers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newSupplierName, phone: newSupplierPhone || null }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          const newSupplier: Supplier = { id: data.id, name: data.name, phone: data.phone };
+          setSuppliers((prev) => (prev.some((s) => s.id === data.id) ? prev : [newSupplier, ...prev]));
+          setFormData({ ...formData, supplierId: data.id });
+          setShowNewSupplierModal(false);
+          setPendingNewSupplier({ name: '', phone: '' });
+        }
+      } else {
+        console.error('Failed to persist supplier');
+      }
+    } catch (err) {
+      console.error('Failed to persist supplier', err);
+    }
+  };
+
   const filtered = products.filter((product) =>
     !search ||
     product.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -321,11 +380,13 @@ export default function ProductsPage() {
           formData={formData}
           categories={categories}
           baseUnits={baseUnits}
+          suppliers={suppliers}
           onClose={handleCloseModal}
           onSubmit={handleProductSubmit}
           onChange={(field, value) => setFormData({ ...formData, [field]: value })}
           onCategoryChange={handleCategoryChange}
           onBaseUnitChange={handleBaseUnitChange}
+          onSupplierChange={handleSupplierChange}
         />
       )}
 
@@ -335,6 +396,15 @@ export default function ProductsPage() {
           onClose={() => { setShowNewCategoryModal(false); setPendingNewCategory(''); }}
           onSubmit={handleAddNewCategory}
           onPendingChange={setPendingNewCategory}
+        />
+      )}
+
+      {showNewSupplierModal && (
+        <SupplierModal
+          pendingNewSupplier={pendingNewSupplier}
+          onClose={() => { setShowNewSupplierModal(false); setPendingNewSupplier({ name: '', phone: '' }); }}
+          onSubmit={handleAddNewSupplier}
+          onPendingChange={(field, value) => setPendingNewSupplier({ ...pendingNewSupplier, [field]: value })}
         />
       )}
 

@@ -41,14 +41,6 @@ async function updateProductWithNicknameFallback(id: string, data: Prisma.Produc
   }
 }
 
-const supplierNumberSchema = z.preprocess((value) => {
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed === '' ? undefined : trimmed;
-  }
-  return value;
-}, z.string().regex(/^(?:\d{10}|\d{12})$/, 'Supplier number must be exactly 10 or 12 digits').optional());
-
 const productSchema = z.object({
   name: z.string().min(1),
   category: z.string().min(1),
@@ -60,8 +52,7 @@ const productSchema = z.object({
   baseUnit: z.string().min(1),
   packageUnitLabel: z.string().optional(),
   packageSize: z.number().int().nonnegative().optional(),
-  supplierName: z.string().optional(),
-  supplierNumber: supplierNumberSchema,
+  supplierId: z.string().optional(),
 });
 
 // GET - List all products
@@ -74,6 +65,7 @@ export async function GET() {
 
     const products = await prisma.product.findMany({
       where: { userId: session.user.id },
+      include: { supplier: true },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(products);
@@ -97,6 +89,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
+    // Validate supplier belongs to current user if provided
+    if (data.supplierId) {
+      const supplier = await prisma.supplier.findUnique({
+        where: { id: data.supplierId },
+      });
+      if (!supplier || supplier.userId !== session.user.id) {
+        return NextResponse.json({ error: 'Invalid supplier' }, { status: 400 });
+      }
+    }
+
     const product = await createProductWithNicknameFallback({
       name: data.name,
       category: data.category,
@@ -105,8 +107,9 @@ export async function POST(request: NextRequest) {
       baseUnit: data.baseUnit,
       packageUnitLabel: data.packageUnitLabel,
       packageSize: data.packageSize,
-      supplierName: data.supplierName?.trim() || "unknown",
-      supplierNumber: data.supplierNumber?.trim() || "unknown",
+      ...(data.supplierId ? { supplier: { connect: { id: data.supplierId } } } : {}),
+      supplierName: "unknown",
+      supplierNumber: "unknown",
       currentStock: data.currentStock ?? 0,
       minStockLevel: data.minStockLevel ?? 0,
       unitPrice: data.unitPrice ?? 0,
@@ -162,26 +165,10 @@ export async function PUT(request: NextRequest) {
       baseUnit: z.string().min(1).optional(),
       packageUnitLabel: z.string().optional(),
       packageSize: z.number().int().nonnegative().optional(),
-      supplierName: z.string().optional(),
-      supplierNumber: supplierNumberSchema,
+      supplierId: z.string().optional(),
     });
 
     const validatedData = updateSchema.parse(updateData);
-
-    const updatePayload: Prisma.ProductUpdateInput = {
-      ...(validatedData.name && { name: validatedData.name }),
-      ...(validatedData.category && { category: validatedData.category }),
-      ...(typeof validatedData.nickname !== 'undefined' && { nickname: validatedData.nickname?.trim() || null }),
-      ...(validatedData.baseUnit && { baseUnit: validatedData.baseUnit }),
-      packageUnitLabel: validatedData.packageUnitLabel,
-      packageSize: validatedData.packageSize,
-      ...(typeof validatedData.supplierName !== 'undefined' && { supplierName: validatedData.supplierName?.trim() || 'unknown' }),
-      ...(typeof validatedData.supplierNumber !== 'undefined' && { supplierNumber: validatedData.supplierNumber?.trim() || 'unknown' }),
-      ...(typeof validatedData.currentStock !== 'undefined' && { currentStock: validatedData.currentStock }),
-      ...(typeof validatedData.minStockLevel !== 'undefined' && { minStockLevel: validatedData.minStockLevel }),
-      ...(typeof validatedData.unitPrice !== 'undefined' && { unitPrice: validatedData.unitPrice }),
-      ...(typeof validatedData.purchasePrice !== 'undefined' && { purchasePrice: validatedData.purchasePrice }),
-    };
 
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.id) {
@@ -192,6 +179,34 @@ export async function PUT(request: NextRequest) {
     if (!existing || existing.userId !== session.user.id) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
+
+    // Validate supplier belongs to current user if being changed
+    if (validatedData.supplierId) {
+      const supplier = await prisma.supplier.findUnique({
+        where: { id: validatedData.supplierId },
+      });
+      if (!supplier || supplier.userId !== session.user.id) {
+        return NextResponse.json({ error: 'Invalid supplier' }, { status: 400 });
+      }
+    }
+
+    const updatePayload: Prisma.ProductUpdateInput = {
+      ...(validatedData.name && { name: validatedData.name }),
+      ...(validatedData.category && { category: validatedData.category }),
+      ...(typeof validatedData.nickname !== 'undefined' && { nickname: validatedData.nickname?.trim() || null }),
+      ...(validatedData.baseUnit && { baseUnit: validatedData.baseUnit }),
+      packageUnitLabel: validatedData.packageUnitLabel,
+      packageSize: validatedData.packageSize,
+      ...(typeof validatedData.supplierId !== 'undefined'
+        ? validatedData.supplierId
+          ? { supplier: { connect: { id: validatedData.supplierId } } }
+          : { supplier: { disconnect: true } }
+        : {}),
+      ...(typeof validatedData.currentStock !== 'undefined' && { currentStock: validatedData.currentStock }),
+      ...(typeof validatedData.minStockLevel !== 'undefined' && { minStockLevel: validatedData.minStockLevel }),
+      ...(typeof validatedData.unitPrice !== 'undefined' && { unitPrice: validatedData.unitPrice }),
+      ...(typeof validatedData.purchasePrice !== 'undefined' && { purchasePrice: validatedData.purchasePrice }),
+    };
 
     const product = await updateProductWithNicknameFallback(id, updatePayload);
 

@@ -30,6 +30,7 @@ model User {
   hardwares             Hardware[]
   products              Product[]
   categories            Category[]
+  suppliers             Supplier[]
   sales                 Sale[]
   debts                 Debt[]
   debtPayments          DebtPayment[]
@@ -53,6 +54,8 @@ model Product {
   baseUnit         String   @default("pcs")
   packageUnitLabel String?
   packageSize      Int?
+  supplierId       String?
+  supplier         Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   supplierName     String   @default("unknown")
   supplierNumber   String   @default("unknown")
   unitPrice        Float
@@ -68,6 +71,7 @@ model Product {
   @@unique([userId, nickname])
   @@index([category])
   @@index([userId])
+  @@index([supplierId])
   @@index([nickname])
   @@map("products")
   @@schema("hardware")
@@ -83,6 +87,21 @@ model Category {
 
   @@unique([userId, name])
   @@map("categories")
+  @@schema("hardware")
+}
+
+// Suppliers for products
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  Product[]
+  createdAt DateTime @default(now())
+
+  @@unique([userId, name])
+  @@map("suppliers")
   @@schema("hardware")
 }
 

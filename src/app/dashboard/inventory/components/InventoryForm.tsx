@@ -87,10 +87,14 @@ export function InventoryForm({
           {selectedProduct && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 mb-2">Supplier Info</div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div><div className="text-[11px] text-slate-500">Supplier Name</div><div className="text-sm font-semibold text-slate-800">{selectedProduct.supplierName || 'unknown'}</div></div>
-                <div><div className="text-[11px] text-slate-500">Supplier Number</div><div className="text-sm font-semibold text-slate-800">{selectedProduct.supplierNumber || 'unknown'}</div></div>
-              </div>
+              {selectedProduct.supplier ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div><div className="text-[11px] text-slate-500">Supplier Name</div><div className="text-sm font-semibold text-slate-800">{selectedProduct.supplier.name}</div></div>
+                  <div><div className="text-[11px] text-slate-500">Supplier Phone</div><div className="text-sm font-semibold text-slate-800">{selectedProduct.supplier.phone || 'No phone'}</div></div>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-600">No supplier assigned</div>
+              )}
             </div>
           )}
 
