@@ -31,6 +31,9 @@ export default function ProductsPage() {
   const [showNewSupplierModal, setShowNewSupplierModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCategorySaving, setIsCategorySaving] = useState(false);
+  const [isSupplierSaving, setIsSupplierSaving] = useState(false);
+  const [isUnitSaving, setIsUnitSaving] = useState(false);
   const [pendingNewCategory, setPendingNewCategory] = useState('');
   const [pendingNewUnit, setPendingNewUnit] = useState('');
   const [pendingNewSupplier, setPendingNewSupplier] = useState({ name: '', phone: '' });
@@ -201,6 +204,7 @@ export default function ProductsPage() {
     e.preventDefault();
     const newCat = pendingNewCategory.trim();
     if (!newCat || categories.includes(newCat)) return;
+    setIsCategorySaving(true);
     try {
       const res = await fetch('/api/categories', {
         method: 'POST',
@@ -217,6 +221,8 @@ export default function ProductsPage() {
       }
     } catch (err) {
       console.error('Failed to persist category', err);
+    } finally {
+      setIsCategorySaving(false);
     }
   };
 
@@ -234,6 +240,7 @@ export default function ProductsPage() {
     const raw = pendingNewUnit.trim();
     const newUnit = raw.toLowerCase();
     if (!newUnit) return;
+    setIsUnitSaving(true);
 
     try {
       const res = await fetch('/api/base-units', {
@@ -263,6 +270,8 @@ export default function ProductsPage() {
       }
     } catch (error) {
       console.error('Failed to add unit:', error);
+    } finally {
+      setIsUnitSaving(false);
     }
   };
 
@@ -281,6 +290,7 @@ export default function ProductsPage() {
     const newSupplierPhone = pendingNewSupplier.phone.trim();
 
     if (!newSupplierName) return;
+    setIsSupplierSaving(true);
 
     try {
       const res = await fetch('/api/suppliers', {
@@ -303,6 +313,8 @@ export default function ProductsPage() {
       }
     } catch (err) {
       console.error('Failed to persist supplier', err);
+    } finally {
+      setIsSupplierSaving(false);
     }
   };
 
@@ -396,6 +408,7 @@ export default function ProductsPage() {
           onClose={() => { setShowNewCategoryModal(false); setPendingNewCategory(''); }}
           onSubmit={handleAddNewCategory}
           onPendingChange={setPendingNewCategory}
+          isSubmitting={isCategorySaving}
         />
       )}
 
@@ -405,6 +418,7 @@ export default function ProductsPage() {
           onClose={() => { setShowNewSupplierModal(false); setPendingNewSupplier({ name: '', phone: '' }); }}
           onSubmit={handleAddNewSupplier}
           onPendingChange={(field, value) => setPendingNewSupplier({ ...pendingNewSupplier, [field]: value })}
+          isSubmitting={isSupplierSaving}
         />
       )}
 
@@ -414,6 +428,7 @@ export default function ProductsPage() {
           onClose={() => { setShowNewUnitModal(false); setPendingNewUnit(''); }}
           onSubmit={handleAddNewUnit}
           onPendingChange={setPendingNewUnit}
+          isSubmitting={isUnitSaving}
         />
       )}
     </div>
