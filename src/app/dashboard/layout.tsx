@@ -43,6 +43,7 @@ function DashboardLayoutContent({
   const [ready, setReady] = useState(false);
   const [locked, setLocked] = useState(false);
   const [password, setPassword] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const timeoutMinutesRef = useRef<number | null>(null);
   const [passwordError, setPasswordError] = useState('');
   const [unlocking, setUnlocking] = useState(false);
@@ -195,6 +196,22 @@ function DashboardLayoutContent({
   };
 
   useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
@@ -216,10 +233,25 @@ function DashboardLayoutContent({
     <div className="relative h-screen bg-gray-50">
       <div className={locked ? 'pointer-events-none select-none opacity-50' : ''}>
         <div className="flex h-screen bg-gray-50">
-          <Sidebar pathname={pathname} />
-          <main className="flex-1 overflow-auto">
-            <div className="p-8">
-              {children}
+          <Sidebar pathname={pathname} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <main className="flex-1 overflow-auto flex flex-col">
+            {/* Mobile header with toggle */}
+            <div className="md:hidden flex items-center gap-2 px-4 py-3 bg-white border-b border-gray-200">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Toggle sidebar"
+              >
+                <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <span className="text-sm font-semibold text-gray-900">HardwareStock</span>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <div className="p-4 md:p-8">
+                {children}
+              </div>
             </div>
           </main>
         </div>
