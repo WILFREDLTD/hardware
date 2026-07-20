@@ -109,36 +109,56 @@ function drawTable(doc: jsPDF, title: string, headers: string[], rows: string[][
   const colCount = normalizedHeaders.length;
   const pageWidth = 190;
   const colWidth = pageWidth / colCount;
+  const cellPadding = 3;
+  const lineHeight = 5;
+  const headerLines = normalizedHeaders.map(header => doc.splitTextToSize(header, colWidth - cellPadding * 2));
+  const headerHeight = Math.max(...headerLines.map(lines => lines.length)) * lineHeight + cellPadding * 2;
 
-  doc.setFontSize(10);
-  doc.setTextColor('#0f172a');
-  doc.text(title, 14, y);
-  y += 6;
+  function drawTableHeader() {
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(title, 14, y);
+    y += 6;
 
-  doc.setFontSize(9);
-  doc.setFillColor('#f8fafc');
-  normalizedHeaders.forEach((header, index) => {
-    const x = 14 + index * colWidth;
-    doc.rect(x, y, colWidth, 8, 'F');
-    doc.setTextColor('#334155');
-    doc.text(header, x + 2, y + 5);
-  });
+    doc.setFontSize(9);
+    doc.setDrawColor('#cbd5e1');
+    doc.setFillColor('#f8fafc');
 
-  y += 10;
+    headerLines.forEach(( index) => {
+      const x = 14 + index * colWidth;
+      doc.rect(x, y, colWidth, headerHeight, 'FD');
+    });
+
+    doc.setTextColor(0, 0, 0);
+    headerLines.forEach((lines, index) => {
+      const x = 14 + index * colWidth;
+      doc.text(lines, x + cellPadding, y + cellPadding + 2);
+    });
+
+    y += headerHeight;
+  }
+
+  drawTableHeader();
 
   rows.forEach(row => {
-    const rowHeight = Math.max(...row.map(cell => doc.splitTextToSize(cell, colWidth - 4).length)) * 5 + 6;
+    const rowCells = row.concat(Array(Math.max(0, normalizedHeaders.length - row.length)).fill(''));
+    const rowLineCounts = rowCells.map(cell => doc.splitTextToSize(cell, colWidth - cellPadding * 2).length);
+    const rowHeight = Math.max(...rowLineCounts) * lineHeight + cellPadding * 2;
+
     if (y + rowHeight > 270) {
       doc.addPage();
       y = 20;
+      drawTableHeader();
     }
 
-    row.forEach((cell, index) => {
+    rowCells.forEach((cell, index) => {
       const x = 14 + index * colWidth;
+      doc.setDrawColor('#cbd5e1');
+      doc.rect(x, y, colWidth, rowHeight);
       doc.setFontSize(8);
       doc.setTextColor('#475569');
-      const lines = doc.splitTextToSize(cell, colWidth - 4);
-      doc.text(lines, x + 2, y + 5);
+      const lines = doc.splitTextToSize(cell, colWidth - cellPadding * 2);
+      doc.text(lines, x + cellPadding, y + cellPadding + 2, { maxWidth: colWidth - cellPadding * 2 });
     });
 
     y += rowHeight;

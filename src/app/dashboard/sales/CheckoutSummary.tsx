@@ -26,7 +26,7 @@ export default function CheckoutSummary({
 }: CheckoutSummaryProps) {
   return (
     <>
-      <div className="grid grid-cols-2 gap-2 bg-white p-3 rounded-2xl mt-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 bg-white p-3 rounded-2xl mt-3">
         <div className="flex items-center gap-2 rounded-2xl border border-gray-100 p-3">
           <div className="h-7 w-7 shrink-0 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -71,7 +71,7 @@ export default function CheckoutSummary({
       
 
       {/* Paid / Change section — drop-in replacement for the block you shared */}
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div className="rounded-2xl border border-gray-100 bg-white p-3">
           <div className="flex items-center gap-2 mb-2">
             <div className="h-7 w-7 shrink-0 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
