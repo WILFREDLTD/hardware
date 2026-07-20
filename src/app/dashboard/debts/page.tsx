@@ -327,66 +327,112 @@ export default function DebtsPage() {
           </div>
         </Card>
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="text-left py-3.5 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Debtor</th>
-                <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Contact</th>
-                <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Progress</th>
-                <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Amount</th>
-                <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(debt => (
-                <tr key={debt.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
-                  <td className="py-4 px-5">
-                    <div className="flex items-center gap-3">
-                      <InitialsAvatar name={debt.debtorName} />
-                      <div className="text-sm font-semibold text-gray-900">{debt.debtorName}</div>
+        <>
+          <div className="space-y-4 md:hidden">
+            {filtered.map(debt => (
+              <Card
+                key={debt.id}
+                className="border-gray-200 p-4 cursor-pointer hover:border-gray-300 hover:shadow-lg transition-shadow"
+                onClick={() => { setSelectedDebt(debt); setPaymentAmount(''); setPaymentMethod('CASH'); setMpesaNumber(''); setMpesaStatus(null); }}
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400 mb-1">Debtor</div>
+                      <div className="text-base font-semibold text-slate-900 truncate">{debt.debtorName}</div>
                     </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <a href={`tel:${debt.debtorPhone}`} className="text-sm text-blue-600 hover:underline">{debt.debtorPhone}</a>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center gap-3">
-                      <ProgressRing pct={(debt.amountPaid / debt.amount) * 100} />
-                      <div>
-                        <div className="text-xs font-medium text-gray-700">KES {formatKES(debt.amountPaid)}</div>
-                        <div className="text-xs text-gray-400">of KES {formatKES(debt.amount)}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="text-sm font-bold text-gray-900">KES {formatKES(debt.amount)}</div>
-                    {debt.status !== 'PAID' && (
-                      <div className="text-xs text-red-500">KES {formatKES(debt.amount - debt.amountPaid)} remaining</div>
-                    )}
-                  </td>
-                  <td className="py-4 px-4">
                     <Badge variant={statusVariant(debt.status) as any}>{debt.status}</Badge>
-                  </td>
-                  <td className="py-4 px-4">
-                    {debt.status !== 'PAID' && (
-                      <button
-                        onClick={() => { setSelectedDebt(debt); setPaymentAmount(''); setPaymentMethod('CASH'); setMpesaNumber(''); setMpesaStatus(null); }}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:text-white"
-                        style={{ borderColor: '#1a6b45', color: '#1a6b45' }}
-                        onMouseEnter={e => { (e.target as HTMLElement).style.backgroundColor = '#1a6b45'; (e.target as HTMLElement).style.color = '#fff'; }}
-                        onMouseLeave={e => { (e.target as HTMLElement).style.backgroundColor = 'transparent'; (e.target as HTMLElement).style.color = '#1a6b45'; }}
-                      >
-                        Record Payment
-                      </button>
-                    )}
-                  </td>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400 mb-1">Date</div>
+                    <div className="text-sm text-slate-700">{new Date(debt.date).toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400 mb-1">Contact</div>
+                    <a href={`tel:${debt.debtorPhone}`} className="text-sm text-blue-600 hover:underline">{debt.debtorPhone}</a>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400 mb-1">Amount</div>
+                    <div className="text-sm font-semibold text-slate-900">KES {formatKES(debt.amount)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400 mb-1">Paid</div>
+                    <div className="text-sm font-semibold text-emerald-700">KES {formatKES(debt.amountPaid)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400 mb-1">Remaining</div>
+                    <div className="text-sm font-semibold text-amber-700">KES {formatKES(debt.amount - debt.amountPaid)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400 mb-1">Progress</div>
+                    <div className="text-sm font-semibold text-slate-900">{Math.round((debt.amountPaid / debt.amount) * 100)}%</div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="overflow-x-auto p-0 hidden md:block">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left py-3.5 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Debtor</th>
+                  <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Contact</th>
+                  <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Progress</th>
+                  <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Amount</th>
+                  <th className="text-left py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                  <th className="py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+              </thead>
+              <tbody>
+                {filtered.map(debt => (
+                  <tr key={debt.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
+                    <td className="py-4 px-5">
+                      <div className="flex items-center gap-3">
+                        <InitialsAvatar name={debt.debtorName} />
+                        <div className="text-sm font-semibold text-gray-900">{debt.debtorName}</div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <a href={`tel:${debt.debtorPhone}`} className="text-sm text-blue-600 hover:underline">{debt.debtorPhone}</a>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <ProgressRing pct={(debt.amountPaid / debt.amount) * 100} />
+                        <div>
+                          <div className="text-xs font-medium text-gray-700">KES {formatKES(debt.amountPaid)}</div>
+                          <div className="text-xs text-gray-400">of KES {formatKES(debt.amount)}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="text-sm font-bold text-gray-900">KES {formatKES(debt.amount)}</div>
+                      {debt.status !== 'PAID' && (
+                        <div className="text-xs text-red-500">KES {formatKES(debt.amount - debt.amountPaid)} remaining</div>
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <Badge variant={statusVariant(debt.status) as any}>{debt.status}</Badge>
+                    </td>
+                    <td className="py-4 px-4">
+                      {debt.status !== 'PAID' && (
+                        <button
+                          onClick={() => { setSelectedDebt(debt); setPaymentAmount(''); setPaymentMethod('CASH'); setMpesaNumber(''); setMpesaStatus(null); }}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:text-white"
+                          style={{ borderColor: '#1a6b45', color: '#1a6b45' }}
+                          onMouseEnter={e => { (e.target as HTMLElement).style.backgroundColor = '#1a6b45'; (e.target as HTMLElement).style.color = '#fff'; }}
+                          onMouseLeave={e => { (e.target as HTMLElement).style.backgroundColor = 'transparent'; (e.target as HTMLElement).style.color = '#1a6b45'; }}
+                        >
+                          Record Payment
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </>
       )}
         </>
       )}

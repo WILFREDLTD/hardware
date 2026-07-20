@@ -6,7 +6,6 @@ import { signIn, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Toast from '@/components/ui/Toast';
-import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,6 +13,12 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+
+  const handleRegisterClick = () => {
+    setRegisterLoading(true);
+    router.push('/register');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +68,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
       {/* Branding panel */}
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-green-800 via-green-700 to-green-600 lg:flex lg:w-[42%] lg:flex-col lg:justify-between lg:p-12">
+      <div className="relative hidden overflow-hidden bg-gradient-to-br from-green-800 via-green-700 to-green-600 lg:flex lg:w-[55%] lg:flex-col lg:justify-between lg:p-12">
         <div className="pointer-events-none absolute inset-0 opacity-[0.15]">
           <svg className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -118,26 +123,26 @@ export default function LoginPage() {
       </div>
 
       {/* Form panel */}
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 sm:px-8 lg:px-16">
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 py-0 sm:py-10 sm:px-8 lg:flex-1 lg:h-screen lg:min-h-0 lg:py-0 lg:px-0">
         <div className="relative w-full max-w-md">
           <button
             type="button"
             onClick={() => router.push('/')}
             aria-label="Close"
-            className="absolute -right-2 -top-2 rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 sm:right-0 sm:top-0"
+            className="absolute -right-2 -top-2 rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 sm:right-0 sm:top-0 lg:right-0 lg:top-0"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Sign in</h1>
-            <p className="mt-1.5 text-sm text-gray-500">Enter your details to access your dashboard.</p>
+          <div className="mb-8 lg:mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl lg:text-xl">Sign in</h1>
+            <p className="mt-1.5 text-sm text-gray-500 lg:text-xs lg:mt-1">Enter your details to access your dashboard.</p>
           </div>
 
           {error && (
-            <div className="mb-6 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div className="mb-6 lg:mb-3 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-4 lg:p-2 text-sm lg:text-xs text-red-700">
               <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
               </svg>
@@ -145,7 +150,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-2">
             <Input
               label="Email"
               type="email"
@@ -169,7 +174,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full"
+              className="w-full lg:text-sm"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -182,11 +187,25 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-6 lg:mt-3 text-center text-sm lg:text-xs text-gray-600">
             Don't have an account?{' '}
-            <Link href="/register" className="font-medium text-green-600 hover:text-green-700">
-              Register
-            </Link>
+            <button
+              onClick={handleRegisterClick}
+              disabled={registerLoading}
+              className="font-medium text-green-600 hover:text-green-700 transition-colors disabled:opacity-70 inline-flex items-center gap-1.5"
+            >
+              {registerLoading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Loading...
+                </>
+              ) : (
+                'Register'
+              )}
+            </button>
           </p>
         </div>
       </div>

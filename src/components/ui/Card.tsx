@@ -1,11 +1,11 @@
 
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
 }
 
-export const Card: React.FC<CardProps> = ({ children, className = '' }) => {
+export const Card: React.FC<CardProps> = ({ children, className = '', ...props }) => {
   return (
     <div
       className={`
@@ -13,6 +13,7 @@ export const Card: React.FC<CardProps> = ({ children, className = '' }) => {
         shadow-sm hover:shadow-md transition-shadow
         p-6 ${className}
       `}
+      {...props}
     >
       {children}
     </div>

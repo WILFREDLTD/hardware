@@ -38,7 +38,7 @@ const navigationSections: NavSection[] = [
   },
 ];
 
-export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
+export const Sidebar: React.FC<{ pathname: string; isOpen?: boolean; onClose?: () => void }> = ({ pathname, isOpen = true, onClose }) => {
   const [inventoryCount, setInventoryCount] = useState<number | null>(null);
   const [debtsCount, setDebtsCount] = useState<number | null>(null);
   const [productsCount, setProductsCount] = useState<number | null>(null);
@@ -134,10 +134,19 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
   }, []);
 
   return (
-    <aside
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
-      className="w-[260px] bg-emerald-950 border-r border-emerald-900 h-screen sticky top-0 flex flex-col text-slate-100"
-    >
+    <>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 md:hidden z-40"
+          onClick={onClose}
+        />
+      )}
+      
+      <aside
+        style={{ fontFamily: "'DM Sans', sans-serif" }}
+        className={`fixed md:sticky top-0 left-0 z-50 w-[260px] bg-emerald-950 border-r border-emerald-900 h-screen flex flex-col text-slate-100 transition-transform duration-300 md:translate-x-0 ${!isOpen ? '-translate-x-full' : 'translate-x-0'}`}
+      >
       <div
         style={{
           padding: '22px 18px 18px 16px',
@@ -146,39 +155,52 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
           background: '#0f1a12',
         }}
       >
-        <div>
-          <p
-            style={{
-              fontFamily: "'Space Mono', monospace",
-              fontSize: '13px',
-              fontWeight: 700,
-              color: '#f0fdf4',
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              lineHeight: 1,
-              margin: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            {storeName}
-            <span
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1">
+            <p
               style={{
-                display: 'inline-block',
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                background: '#22c55e',
-                flexShrink: 0,
+                fontFamily: "'Space Mono', monospace",
+                fontSize: '13px',
+                fontWeight: 700,
+                color: '#f0fdf4',
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                lineHeight: 1,
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
               }}
-            />
-          </p>
-          {storeLocation ? (
-            <p className="text-sm font-semibold mt-2"  style={{color: '#db147b', fontFamily: "'DM Sans', sans-serif", fontSize: '15px'}}>
-              {storeLocation}
+            >
+              {storeName}
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: '#22c55e',
+                  flexShrink: 0,
+                }}
+              />
             </p>
-          ) : null}
+            {storeLocation ? (
+              <p className="text-sm font-semibold mt-2"  style={{color: '#db147b', fontFamily: "'DM Sans', sans-serif", fontSize: '15px'}}>
+                {storeLocation}
+              </p>
+            ) : null}
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="md:hidden p-1.5 hover:bg-emerald-800 rounded-lg transition-colors"
+              aria-label="Close sidebar"
+            >
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
         {hardwareLists.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
@@ -220,6 +242,7 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
                   key={item.href}
                   href={item.href}
                   aria-current={isActive ? 'page' : undefined}
+                  onClick={onClose}
                   className={`relative flex items-center px-4 py-3 rounded-[10px] transition-all duration-150 ${isActive ? 'bg-emerald-800 shadow-lg' : 'hover:bg-emerald-900/70'}`}
                 >
                   {/* Active indicator bar */}
@@ -279,5 +302,6 @@ export const Sidebar: React.FC<{ pathname: string }> = ({ pathname }) => {
         </p>
       </div>
     </aside>
+    </>
   );
 };

@@ -10,12 +10,11 @@ html {
 }
 
 body {
-  @apply bg-white text-slate-900 antialiased font-sans text-base leading-7;
-  color: #0f172a;
+  @apply bg-white antialiased font-sans text-base leading-7;
 }
 
 body, button, input, select, textarea, a, p, span, label, li, th, td {
-  @apply text-base leading-7 text-slate-900;
+  @apply text-base leading-7;
 }
 
 h1 {
@@ -35,7 +34,7 @@ h4 {
 }
 
 p, span, label, a, li, td, th {
-  @apply text-base leading-8 text-slate-700;
+  @apply text-base leading-8;
 }
 
 button, input, select, textarea {
