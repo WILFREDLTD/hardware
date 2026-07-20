@@ -124,7 +124,7 @@ function drawTable(doc: jsPDF, title: string, headers: string[], rows: string[][
     doc.setDrawColor('#cbd5e1');
     doc.setFillColor('#f8fafc');
 
-    headerLines.forEach((lines, index) => {
+    headerLines.forEach((_lines, index) => {
       const x = 14 + index * colWidth;
       doc.rect(x, y, colWidth, headerHeight, 'FD');
     });
