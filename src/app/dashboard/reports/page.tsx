@@ -1,6 +1,16 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import {
+  BarChart3,
+  Receipt,
+  Package,
+  CreditCard,
+  TrendingUp,
+  Download,
+  FileSpreadsheet,
+  ChevronDown,
+} from 'lucide-react';
 import { exportReportToPdf } from '../../../../actions/reports/pdf';
 import type { ReportSectionKey } from '../../../../actions/reports/types';
 import { OverviewSection } from './components/sections/OverviewSection';
@@ -204,12 +214,15 @@ export default function ReportsPage() {
     downloadCSV(rows, 'profit-report.csv');
   }
 
+  // ── Tabs: restrained brand palette — emerald is the only "active" color,
+  //    amber is reserved for Debts (the one item that genuinely carries a
+  //    warning connotation), everything else is neutral until selected. ──
   const TABS = [
-    { id: 'overview', label: 'Overview', icon: '📊' },
-    { id: 'sales', label: 'Sales', icon: '🧾' },
-    { id: 'inventory', label: 'Inventory', icon: '📦' },
-    { id: 'debts', label: 'Debts', icon: '💳' },
-    { id: 'profit', label: 'Profit & Loss', icon: '📈' },
+    { id: 'overview', label: 'Overview', icon: BarChart3, accent: 'neutral' as const },
+    { id: 'sales', label: 'Sales', icon: Receipt, accent: 'neutral' as const },
+    { id: 'inventory', label: 'Inventory', icon: Package, accent: 'neutral' as const },
+    { id: 'debts', label: 'Debts', icon: CreditCard, accent: 'amber' as const },
+    { id: 'profit', label: 'Profit & loss', icon: TrendingUp, accent: 'neutral' as const },
   ] as const;
 
   const PDF_SECTION_OPTIONS: Array<{ label: string; value: ReportSectionKey }> = [
@@ -225,7 +238,7 @@ export default function ReportsPage() {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-gray-200 border-t-green-600 rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-10 h-10 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-gray-500">Loading reports…</p>
         </div>
       </div>
@@ -239,8 +252,6 @@ export default function ReportsPage() {
         @media print {
           .no-print { display: none !important; }
           #print-report { position: static !important; width: 100% !important; }
-
-          /* Ensure table headers are visible and maintain background color when printing */
           thead, thead tr { display: table-row-group !important; }
           thead th {
             background-color: #f8fafc !important;
@@ -251,8 +262,6 @@ export default function ReportsPage() {
             padding-top: 6px !important;
             padding-bottom: 6px !important;
           }
-
-          /* Make sure table cells are not overlapped and keep normal sizing */
           table { width: 100% !important; border-collapse: separate !important; }
           th, td { background: transparent !important; }
         }
@@ -260,125 +269,173 @@ export default function ReportsPage() {
 
       <div id="print-report" className="space-y-6 w-full max-w-none">
         {/* Header */}
-        <div className="flex items-start justify-between flex-wrap gap-4 no-print">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-            <p className="text-sm text-gray-500 mt-1">Business insights across all dimensions</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
-              {(['7d', '30d', '90d', 'all'] as const).map(r => (
-                <button key={r} onClick={() => setDateRange(r)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${dateRange === r ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                  {r === 'all' ? 'All time' : r === '7d' ? '7 days' : r === '30d' ? '30 days' : '90 days'}
-                </button>
-              ))}
-            </div>
-            <div className="relative" ref={pdfDropdownRef}>
-              <button
-                onClick={() => setShowPDFDropdown(!showPDFDropdown)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 active:scale-95"
-                style={{ backgroundColor: '#1a6b45' }}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-                Export PDF ▾
-              </button>
-              {showPDFDropdown && (
-                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20 w-44">
-                  {PDF_SECTION_OPTIONS.map(option => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleExportPDF(option.value)}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="relative" ref={csvDropdownRef}>
-              <button 
-                onClick={() => setShowCSVDropdown(!showCSVDropdown)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-700 hover:border-gray-300 transition-all"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                Export CSV ▾
-              </button>
-              {showCSVDropdown && (
-                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20 w-44">
-                {[
-                  { label: 'Sales CSV', fn: exportSalesCSV },
-                  { label: 'Inventory CSV', fn: exportInventoryCSV },
-                  { label: 'Debts CSV', fn: exportDebtsCSV },
-                  { label: 'Profit & Loss CSV', fn: exportProfitCSV },
-                ].map(e => (
-                  <button key={e.label} onClick={() => { e.fn(); setShowCSVDropdown(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                    {e.label}
-                  </button>
-                ))}
+        <div className="space-y-4 no-print">
+          <div className="rounded-3xl bg-white text-slate-900 p-5 md:p-6 shadow-[0_4px_12px_rgba(0,0,0,.06)] border border-slate-100">
+
+            {/* Title + controls row */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="grid gap-1">
+                <h1 className="text-[clamp(0.95rem,5vw,1.75rem)] md:text-[28px] font-semibold text-slate-950 tracking-tight whitespace-nowrap overflow-hidden">
+                  Reports &amp; analytics
+                </h1>
+                <p className="text-xs md:text-sm text-slate-500">Business insights across all dimensions</p>
               </div>
+
+              <div className="grid gap-2 sm:grid-cols-[minmax(180px,1fr)_minmax(220px,1fr)] md:flex md:items-center md:gap-2.5">
+                {/* Date range */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-500">Filter by time</label>
+                  <select
+                    value={dateRange}
+                    onChange={e => setDateRange(e.target.value as typeof dateRange)}
+                    className="mt-1 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  >
+                    <option value="7d">7 days</option>
+                    <option value="30d">30 days</option>
+                    <option value="90d">90 days</option>
+                    <option value="all">All time</option>
+                  </select>
+                </div>
+
+                {/* Export controls */}
+                <div className="grid grid-cols-2 gap-2 md:flex md:gap-2">
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowPDFDropdown(!showPDFDropdown)}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 active:scale-[0.98] whitespace-nowrap"
+                    >
+                      <Download className="w-4 h-4" strokeWidth={2} />
+                      Export
+                      <ChevronDown className="w-3 h-3" strokeWidth={2} />
+                    </button>
+                    {showPDFDropdown && (
+                      <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-20 w-44">
+                        {PDF_SECTION_OPTIONS.map(option => (
+                          <button
+                            key={option.value}
+                            onClick={() => handleExportPDF(option.value)}
+                            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0"
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowCSVDropdown(!showCSVDropdown)}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 active:scale-[0.98] whitespace-nowrap"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" strokeWidth={2} />
+                      CSV
+                      <ChevronDown className="w-3 h-3" strokeWidth={2} />
+                    </button>
+                    {showCSVDropdown && (
+                      <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-20 w-44">
+                        {[
+                          { label: 'Sales CSV', fn: exportSalesCSV },
+                          { label: 'Inventory CSV', fn: exportInventoryCSV },
+                          { label: 'Debts CSV', fn: exportDebtsCSV },
+                          { label: 'Profit & Loss CSV', fn: exportProfitCSV },
+                        ].map(e => (
+                          <button
+                            key={e.label}
+                            onClick={() => { e.fn(); setShowCSVDropdown(false); }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0"
+                          >
+                            {e.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs — divider separates them from the header controls above,
+               so the whole card reads as one cohesive unit instead of two
+               stacked components. */}
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              {/* Mobile: 2-column grid, last tab spans full width. Desktop: single row. */}
+              <div className="grid grid-cols-2 gap-2 md:flex md:gap-2">
+                {TABS.map((t, index) => {
+                  const Icon = t.icon;
+                  const isActive = activeTab === t.id;
+                  const isAmber = t.accent === 'amber';
+                  const isLast = index === TABS.length - 1;
+
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setActiveTab(t.id)}
+                      className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[11px] md:text-sm font-medium transition-colors md:flex-1 ${
+                        isLast ? 'col-span-2 md:col-span-1' : 'col-span-1'
+                      } ${
+                        isActive
+                          ? 'bg-emerald-600 text-white'
+                          : isAmber
+                          ? 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                          : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" strokeWidth={2} />
+                      <span className="truncate">{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Screen report content ── */}
+          <div className="w-full max-w-none">
+            {(activeTab === 'overview') && (
+              <OverviewSection
+                stats={stats}
+                filteredSales={filteredSales}
+                salesByDay={salesByDay}
+                revenueByCategory={revenueByCategory}
+                topProducts={topProducts}
+                lowStock={lowStock}
+                outOfStock={outOfStock}
+                pendingDebtsCount={pendingDebts.length}
+              />
+            )}
+
+            {(activeTab === 'sales') && (
+              <SalesSection
+                filteredSales={filteredSales}
+                salesByDay={salesByDay}
+                revenueByCategory={revenueByCategory}
+                topProducts={topProducts}
+                exportSalesCSV={exportSalesCSV}
+              />
+            )}
+
+            {(activeTab === 'inventory') && (
+              <InventorySection
+                products={products}
+                exportInventoryCSV={exportInventoryCSV}
+              />
+            )}
+
+            {(activeTab === 'debts') && (
+              <DebtsSection debts={debts} exportDebtsCSV={exportDebtsCSV} />
+            )}
+
+            {(activeTab === 'profit') && (
+              <ProfitSection
+                filteredSales={filteredSales}
+                profitByDay={profitByDay}
+                revenueByCategory={revenueByCategory}
+                exportProfitCSV={exportProfitCSV}
+              />
             )}
           </div>
         </div>
-
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-1 bg-gray-100 rounded-xl p-1 no-print">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === t.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              <span>{t.icon}</span>
-              <span>{t.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* ── Screen report content ── */}
-        <div className="w-full max-w-none">
-          {(activeTab === 'overview') && (
-            <OverviewSection
-              stats={stats}
-              filteredSales={filteredSales}
-              salesByDay={salesByDay}
-              revenueByCategory={revenueByCategory}
-              topProducts={topProducts}
-              lowStock={lowStock}
-              outOfStock={outOfStock}
-              pendingDebtsCount={pendingDebts.length}
-            />
-          )}
-
-          {(activeTab === 'sales') && (
-            <SalesSection
-              filteredSales={filteredSales}
-              salesByDay={salesByDay}
-              revenueByCategory={revenueByCategory}
-              topProducts={topProducts}
-              exportSalesCSV={exportSalesCSV}
-            />
-          )}
-
-          {(activeTab === 'inventory') && (
-            <InventorySection
-              products={products}
-              exportInventoryCSV={exportInventoryCSV}
-            />
-          )}
-
-          {(activeTab === 'debts') && (
-            <DebtsSection debts={debts} exportDebtsCSV={exportDebtsCSV} />
-          )}
-
-          {(activeTab === 'profit') && (
-            <ProfitSection
-              filteredSales={filteredSales}
-              profitByDay={profitByDay}
-              revenueByCategory={revenueByCategory}
-              exportProfitCSV={exportProfitCSV}
-            />
-          )}
-        </div>
-      </div>
       </div>
     </>
   );

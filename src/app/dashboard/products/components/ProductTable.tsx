@@ -2,6 +2,15 @@ import { Card } from '@/components/ui/Card';
 import type { Product } from './types';
 import { getCategoryIcon } from './types';
 
+function getCategoryColor(category: string) {
+  const slug = category?.toLowerCase?.() || '';
+  if (slug.includes('electrical')) return 'border-emerald-100 bg-emerald-50 text-emerald-700';
+  if (slug.includes('plumbing')) return 'border-sky-100 bg-sky-50 text-sky-700';
+  if (slug.includes('hardware')) return 'border-orange-100 bg-orange-50 text-orange-700';
+  if (slug.includes('tools')) return 'border-violet-100 bg-violet-50 text-violet-700';
+  return 'border-amber-100 bg-amber-50 text-amber-700';
+}
+
 interface Props {
   products: Product[];
   onEdit: (product: Product) => void;
@@ -17,35 +26,36 @@ export function ProductTable({ products, onEdit }: Props) {
             className="border-gray-200 p-4 cursor-pointer hover:border-gray-300 hover:shadow-md transition-shadow"
             onClick={() => onEdit(product)}
           >
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3 min-w-0">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-11 h-11 rounded-2xl bg-gray-100 flex items-center justify-center text-xl flex-shrink-0">{getCategoryIcon(product.category)}</div>
-                  <div className="min-w-0">
-                    <h3 className="text-base font-semibold text-slate-900 truncate">{product.name}</h3>
-                    <p className="text-xs text-slate-500 mt-1 truncate">Nickname: {product.nickname || product.name}</p>
-                  </div>
+            <div className="grid gap-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className={`w-11 h-11 rounded-2xl border ${getCategoryColor(product.category)} flex items-center justify-center text-xl flex-shrink-0`}>
+                  {getCategoryIcon(product.category)}
                 </div>
-                <span className="inline-flex w-max rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
-                  {product.category}
-                </span>
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-slate-900 truncate">{product.name}</h3>
+                  <p className="text-xs text-slate-500 mt-1 truncate">Nickname: {product.nickname || product.name}</p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Base unit</p>
-                  <p className="font-medium">{product.baseUnit}</p>
+              <div className="grid grid-cols-1 gap-3 text-sm text-slate-700">
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Category</p>
+                  <p className="font-semibold text-slate-900 mt-1">{product.category}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Supplier</p>
-                  <p className="font-medium">{product.supplier?.name || product.supplierName || 'No supplier'}</p>
+                <div className="rounded-2xl bg-emerald-50 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-emerald-600">Base Unit</p>
+                  <p className="font-semibold text-slate-900 mt-1">{product.baseUnit}</p>
+                </div>
+                <div className="rounded-2xl bg-sky-50 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-sky-600">Supplier</p>
+                  <p className="font-semibold text-slate-900 mt-1">{product.supplier?.name || product.supplierName || 'No supplier'}</p>
                   {product.supplier?.phone || product.supplierNumber ? (
-                    <p className="text-xs text-slate-500">{product.supplier?.phone || product.supplierNumber}</p>
+                    <p className="text-xs text-slate-500 mt-1">{product.supplier?.phone || product.supplierNumber}</p>
                   ) : null}
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Package rule</p>
-                  <p className="font-medium">{product.packageSize ? `1 ${product.packageUnitLabel || 'package'} = ${product.packageSize} ${product.baseUnit}` : 'Not configured'}</p>
+                <div className="rounded-2xl bg-amber-50 p-3">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-amber-700">Package Rule</p>
+                  <p className="font-semibold text-slate-900 mt-1">{product.packageSize ? `1 ${product.packageUnitLabel || 'package'} = ${product.packageSize} ${product.baseUnit}` : 'Not configured'}</p>
                 </div>
               </div>
             </div>
