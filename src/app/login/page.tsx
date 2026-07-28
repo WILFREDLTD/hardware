@@ -9,7 +9,7 @@ import Toast from '@/components/ui/Toast';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ email: 'wilfred@example.com', password: '123456' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -155,7 +155,8 @@ export default function LoginPage() {
               label="Email"
               type="email"
               required
-              value={formData.email || 'wilfred@example.com'}
+              placeholder="Enter your email"
+              value={formData.email}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
@@ -164,8 +165,8 @@ export default function LoginPage() {
               label="Password"
               type="password"
               required
-              placeholder="123456"
-              value={formData.password || '123456'}
+              placeholder="Enter your password"
+              value={formData.password}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
