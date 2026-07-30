@@ -28,6 +28,7 @@ const navigationSections: NavSection[] = [
       { href: '/dashboard/sales', label: 'Sales' },
       { href: '/dashboard/sales/recent', label: 'Recent Sales' },
       { href: '/dashboard/debts', label: 'Debts' },
+      { href: '/dashboard/invoices', label: 'Invoices' },
     ],
   },
   {
