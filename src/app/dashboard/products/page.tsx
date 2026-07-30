@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
+import Toast from '@/components/ui/Toast';
 import SkeletonCard from '@/components/ui/SkeletonCard';
 import { CategoryModal } from './components/CategoryModal';
 import { ProductFormModal } from './components/ProductFormModal';
@@ -34,6 +35,10 @@ export default function ProductsPage() {
   const [isCategorySaving, setIsCategorySaving] = useState(false);
   const [isSupplierSaving, setIsSupplierSaving] = useState(false);
   const [isUnitSaving, setIsUnitSaving] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastTitle, setToastTitle] = useState('');
+  const [toastDescription, setToastDescription] = useState<string | undefined>(undefined);
+  const [toastVariant, setToastVariant] = useState<'success' | 'error'>('success');
   const [pendingNewCategory, setPendingNewCategory] = useState('');
   const [pendingNewUnit, setPendingNewUnit] = useState('');
   const [pendingNewSupplier, setPendingNewSupplier] = useState({ name: '', phone: '' });
@@ -137,6 +142,13 @@ export default function ProductsPage() {
     setShowModal(true);
   };
 
+  const showToast = (variant: 'success' | 'error', title: string, description?: string) => {
+    setToastVariant(variant);
+    setToastTitle(title);
+    setToastDescription(description);
+    setToastOpen(true);
+  };
+
   const handleCloseModal = () => {
     setShowModal(false);
     setShowNewCategoryModal(false);
@@ -179,12 +191,15 @@ export default function ProductsPage() {
         }
         fetchProducts();
         handleCloseModal();
+        showToast('success', isEditing ? 'Product updated' : 'Product saved');
       } else {
         const data = await res.json();
         console.error('Failed to save product', data);
+        showToast('error', data?.error || 'Unable to save product');
       }
     } catch (error) {
       console.error(error);
+      showToast('error', 'Unable to save product');
     }
     finally {
       setIsSaving(false);
@@ -330,6 +345,13 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
+      <Toast
+        open={toastOpen}
+        title={toastTitle}
+        description={toastDescription}
+        variant={toastVariant}
+        onClose={() => setToastOpen(false)}
+      />
       <Header
         title="Products"
         subtitle="Define your products, base units, and package conversion rules."

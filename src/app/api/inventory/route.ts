@@ -41,6 +41,47 @@ async function updateProductWithNicknameFallback(id: string, data: Prisma.Produc
   }
 }
 
+function getUniqueConstraintErrorMessage(error: any) {
+  const target = error?.meta?.target;
+  if (Array.isArray(target)) {
+    if (target.includes('userId') && target.includes('name')) {
+      return 'Product name already exists';
+    }
+    if (target.includes('userId') && target.includes('nickname')) {
+      return 'Product nickname already exists';
+    }
+    if (target.includes('sku')) {
+      return 'SKU already exists';
+    }
+  }
+
+  if (typeof target === 'string') {
+    if (target.includes('name')) {
+      return 'Product name already exists';
+    }
+    if (target.includes('nickname')) {
+      return 'Product nickname already exists';
+    }
+    if (target.includes('sku')) {
+      return 'SKU already exists';
+    }
+  }
+
+  if (typeof error?.message === 'string') {
+    if (error.message.includes('name')) {
+      return 'Product name already exists';
+    }
+    if (error.message.includes('nickname')) {
+      return 'Product nickname already exists';
+    }
+    if (error.message.includes('sku')) {
+      return 'SKU already exists';
+    }
+  }
+
+  return 'Duplicate product data';
+}
+
 const productSchema = z.object({
   name: z.string().min(1),
   category: z.string().min(1),
@@ -128,7 +169,7 @@ export async function POST(request: NextRequest) {
 
     if (error.code === "P2002") {
       return NextResponse.json(
-        { error: "SKU already exists" },
+        { error: getUniqueConstraintErrorMessage(error) },
         { status: 400 }
       );
     }
@@ -229,7 +270,7 @@ export async function PUT(request: NextRequest) {
 
     if (error.code === "P2002") {
       return NextResponse.json(
-        { error: "SKU already exists" },
+        { error: getUniqueConstraintErrorMessage(error) },
         { status: 400 }
       );
     }
