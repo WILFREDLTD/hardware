@@ -283,12 +283,12 @@ export default function ReportsPage() {
 
               <div className="grid gap-2 sm:grid-cols-[minmax(180px,1fr)_minmax(220px,1fr)] md:flex md:items-center md:gap-2.5">
                 {/* Date range */}
-                <div>
+                <div className="grid gap-2 md:grid-cols-[auto_minmax(220px,1fr)] md:items-center">
                   <label className="block text-xs font-medium text-slate-500">Filter by time</label>
                   <select
                     value={dateRange}
                     onChange={e => setDateRange(e.target.value as typeof dateRange)}
-                    className="mt-1 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    className="mt-1 md:mt-0 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                   >
                     <option value="7d">7 days</option>
                     <option value="30d">30 days</option>
