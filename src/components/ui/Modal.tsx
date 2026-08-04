@@ -1,8 +1,10 @@
+'use client';
+
 interface ModalProps {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
-  onSubmit?: (e: React.FormEvent) => void;
+  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   submitLabel?: string;
   submitDisabled?: boolean;
   isSubmitting?: boolean;

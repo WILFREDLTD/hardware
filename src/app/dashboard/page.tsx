@@ -17,6 +17,7 @@ interface DashboardStats {
   debtsCollected: number;
   profit: number;
   lowStockItems: number;
+  totalExpenses?: number;
 }
 
 const quickActions = [
@@ -95,7 +96,7 @@ export default function DashboardPage() {
       )}
 
       {/* Primary KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {[
           {
             label: 'Revenue Today', value: `KES ${formatKES(stats?.totalRevenue || 0)}`,
@@ -113,8 +114,16 @@ export default function DashboardPage() {
             label: 'Low Stock', value: stats?.lowStockItems || 0,
             sub: 'items need restock', icon: '⚠️', accent: '#f59e0b',
           },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl border border-gray-100 px-3 sm:px-4 py-3 sm:py-4 relative overflow-hidden">
+          {
+            label: 'Expenses', value: `KES ${formatKES(stats?.totalExpenses || 0)}`,
+            sub: 'Track on Expenses page', icon: '🧾', accent: '#8b5cf6',
+            span: 'col-span-2 lg:col-span-1',
+          },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className={`${s.span ?? ''} bg-white rounded-xl border border-gray-100 px-3 sm:px-4 py-3 sm:py-4 relative overflow-hidden`}
+          >
             <div className="absolute top-0 left-0 w-1 h-full rounded-l-xl" style={{ backgroundColor: s.accent }} />
             <div className="pl-2">
               <div className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">{s.label}</div>
